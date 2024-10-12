@@ -1,0 +1,3372 @@
+#+title: wimi's Configuration
+#+startup: show2levels
+#+properties: header-args :mkdirp yes
+
+* service
+** pipewire
+*** cmd
+#+begin_src bash
+systemctl --user enable --now pipewire.socket pipewire-pulse.socket pipewire.service wireplumber.service
+exit
+#+end_src
+** emacs
+*** cmd
+#+begin_src bash
+doas systemctl --user enable --now emacs-29
+exit
+#+end_src
+** battery
+*** [[~/.config/systemd/user/battery.service][battery.service]]
+#+begin_src conf :tangle ~/.config/systemd/user/battery.service
+[Unit]
+Description=Warning as low-battery status
+
+[Service]
+Type=oneshot
+ExecStart=/home/wimi/.local/bin/battery-alarm
+
+[Install]
+WantedBy=battery.timer
+#+end_src
+*** [[~/.config/systemd/user/battery.timer][battery.timer]]
+#+begin_src conf :tangle ~/.config/systemd/user/battery.timer
+[Unit]
+Description=Periodic battery status checker
+
+[Timer]
+OnActiveSec=1m
+OnUnitActiveSec=1m
+
+[Install]
+WantedBy=timers.target
+#+end_src
+*** cmd
+#+begin_src bash
+systemctl --user enable --now battery.service battery.timer
+exit
+#+end_src
+* config
+** bash
+*** [[file:~/.bashrc][.bashrc]]
+**** default
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+if [[ $- != *i* ]]; then
+    return
+fi
+#+end_src
+**** vi mode
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+set -o vi
+set -o noclobber
+#+end_src
+**** env - path, history, editor, nodejs
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+export PATH=$PATH:/usr/share/bin:$HOME/.local/bin:$HOME/.config/emacs/bin:
+export HISTSIZE=1000
+export HISTTIMEFORMAT="%Y-%m-%d,%H:%M:%S|"
+export HISTCONTROL="$HISTCONTROL erasedups:ignoreboth"
+export EDITOR=vi
+export NPM_CONFIG_USERCONFIG="$HOME/.config/npm/npmrc"
+export CLIPBOARD_TMPDIR="$HOME/.cache"
+export CLIPBOARD_PERSISTDIR="$HOME/.cache"
+export CLIPBOARD_LOCALE="zh_CN.UTF-8"
+export CARGO_HOME="$HOME/.local/share/cargo"
+export FZF_DEFAULT_OPTS=" \
+    --color=bg+:#414559,bg:#303446,spinner:#f2d5cf,hl:#e78284 \
+    --color=fg:#c6d0f5,header:#e78284,info:#ca9ee6,pointer:#f2d5cf \
+    --color=marker:#f2d5cf,fg+:#c6d0f5,prompt:#ca9ee6,hl+:#e78284"
+#+end_src
+**** power
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias bye="doas shutdown now"
+alias siu="doas reboot"
+alias asap="doas systemctl soft-reboot"
+#+end_src
+**** monitor
+#+begin_src bash :shebang #!/usr/bin/env bash
+alias hdmia1="doas fbset -xres 2560 -yres 1440"
+alias edp1="doas fbset -xres 2880 -yres 1800"
+#+end_src
+**** brightness
+#+begin_src bash :shebang #!/usr/bin/env bash
+alias bridn='brightnessctl s 5%- && notify-send "Brightness down 5%"'
+alias briup='brightnessctl s +5% && notify-send "Brightness up 5%"'
+alias brimx='brightnessctl s 100% && notify-send "Brightness set to 100%"'
+#+end_src
+**** speaker
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias vvmu="wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && notify-send 'Audio has been toggled'"
+alias vvdn="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && notify-send 'Volume down 5%'"
+alias vvup="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && notify-send 'Volume up 5%'"
+alias vvmx="wpctl set-volume @DEFAULT_AUDIO_SINK@ 100% && notify-send 'Volume set to 100%'"
+#+end_src
+**** microphone
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias vmmu='wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && notify-send "Micro has been toggled"'
+alias vmdn='wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%- && notify-send "Micro down 5%"'
+alias vmup='wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+ && notify-send "Micro up 5%"'
+alias vmmx='wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 100% && notify-send "Micro set to 100%"'
+#+end_src
+**** bluetooth
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias miair="bluetoothctl connect 14:0A:29:77:B1:4E && notify-send 'connecting to Mi Airpod'"
+alias dismiair="bluetoothctl disconnect 14:0A:29:77:B1:4E && notify-send 'Mi Airpod has been disconnected'"
+#+end_src
+**** lazy command
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias top="btop"
+alias cp="cp -rf"
+alias df="df -h"
+alias du="du -c -h"
+alias grep="rg"
+alias mkdir="mkdir -p -v"
+alias ping="ping -c 5"
+alias rm="rm -rf"
+alias weather="curl wttr.in/Hangzhou?lang=zh"
+alias wget="wget --no-hsts"
+
+alias e="emacsclient -t"
+alias h="wl-clipboard-history -l"
+alias i="kitten icat"
+alias m="musicfox"
+alias s="source ~/.bashrc && clear"
+alias t="clitrans"
+alias x="wl-clipboard-history -l | fzf | wl-copy -p"
+#+end_src
+**** lazy cd
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+#+end_src
+**** lazy ls
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias l="eza -g --group-directories-first"
+alias ll="eza -lg --group-directories-first --icons"
+alias la="eza -ag --group-directories-first --icons"
+alias lr="eza -agR --group-directories-first --icons"
+alias lt="eza -T --group-directories-first --icons"
+alias lla="eza -alg --group-directories-first --icons"
+#+end_src
+**** lazy portage
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias pquu="doas emaint sync -A"
+alias pqss="doas emerge -avuDN @world"
+alias pqs="doas emerge -avuDN"
+alias pqc="doas emerge --depclean"
+alias pqq="doas eclean-dist -d"
+alias pqf="equery f"
+alias pqm="equery m"
+alias pqu="equery u"
+alias pql="equery l"
+alias pqg="equery g"
+alias pqd="equery d"
+alias pqb="equery b"
+alias pqe="cat /var/log/portage/elog/summary.log"
+alias pqi="watch -cn 10 genlop -ci"
+alias pqw="equery w"
+alias pkginfo="cat /var/lib/portage/world"
+#+end_src
+**** proxy
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+function v2p() {
+    export http_proxy='http://127.0.0.1:20171'
+    export https_proxy='http://127.0.0.1:20171'
+    curl cip.cc
+}
+
+function voff(){
+    unset http_proxy https_proxy
+    curl cip.cc
+}
+#+end_src
+**** exFAT
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+alias lnl="doas mount -o rw,users,uid=1000,dmask=007,fmask=117 /dev/sda1 /mnt"
+#+end_src
+**** zoxide (must be last line)
+#+begin_src bash :tangle ~/.bashrc :shebang #!/usr/bin/env bash
+eval "$(zoxide init bash)"
+#+end_src
+*** [[file:~/.bash_logout][.bash_logout]]
+**** default
+#+begin_src bash :tangle ~/.bash_logout :shebang #!/usr/bin/env bash
+clear
+#+end_src
+*** [[file:~/.bash_profile][.bash_profile]]
+**** default
+#+begin_src bash :tangle ~/.bash_profile :shebang #!/usr/bin/env bash
+if [[ -f ~/.bashrc ]]; then
+    . ~/.bashrc
+fi
+#+end_src
+**** nix subsystem
+#+begin_src bash :tangle ~/.bash_profile :shebang #!/usr/bin/env bash
+if [ -e /home/wimi/.nix-profile/etc/profile.d/nix.sh ]; then
+    . /home/wimi/.nix-profile/etc/profile.d/nix.sh;
+fi
+#+end_src
+**** auto login
+#+begin_src bash :shebang #!/usr/bin/env bash
+if [[ ! ${DISPLAY} && ${XDG_VTNR} == 1 ]]; then
+    hypr
+fi
+#+end_src
+** btop
+*** config - [[file:~/.config/btop/btop.conf][.config/btop/btop.conf]]
+#+begin_src conf :tangle ~/.config/btop/btop.conf
+#? Config file for btop v. 1.2.13
+
+#* Name of a btop++/bpytop/bashtop formatted ".theme" file, "Default" and "TTY" for builtin themes.
+#* Themes should be placed in "../share/btop/themes" relative to binary or "$HOME/.config/btop/themes"
+color_theme = "~/.config/btop/themes/catppuccin_frappe.theme"
+
+#* If the theme set background should be shown, set to False if you want terminal background transparency.
+theme_background = False
+
+#* Sets if 24-bit truecolor should be used, will convert 24-bit colors to 256 color (6x6x6 color cube) if false.
+truecolor = True
+
+#* Set to true to force tty mode regardless if a real tty has been detected or not.
+#* Will force 16-color mode and TTY theme, set all graph symbols to "tty" and swap out other non tty friendly symbols.
+force_tty = False
+
+#* Define presets for the layout of the boxes. Preset 0 is always all boxes shown with default settings. Max 9 presets.
+#* Format: "box_name:P:G,box_name:P:G" P=(0 or 1) for alternate positions, G=graph symbol to use for box.
+#* Use whitespace " " as separator between different presets.
+#* Example: "cpu:0:default,mem:0:tty,proc:1:default cpu:0:braille,proc:0:tty"
+presets = "cpu:1:default,proc:0:default cpu:0:default,mem:0:default,net:0:default cpu:0:block,net:0:tty"
+
+#* Set to True to enable "h,j,k,l,g,G" keys for directional control in lists.
+#* Conflicting keys for h:"help" and k:"kill" is accessible while holding shift.
+vim_keys = True
+
+#* Rounded corners on boxes, is ignored if TTY mode is ON.
+rounded_corners = False
+
+#* Default symbols to use for graph creation, "braille", "block" or "tty".
+#* "braille" offers the highest resolution but might not be included in all fonts.
+#* "block" has half the resolution of braille but uses more common characters.
+#* "tty" uses only 3 different symbols but will work with most fonts and should work in a real TTY.
+#* Note that "tty" only has half the horizontal resolution of the other two, so will show a shorter historical view.
+graph_symbol = "braille"
+
+# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+graph_symbol_cpu = "default"
+
+# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+graph_symbol_mem = "default"
+
+# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+graph_symbol_net = "default"
+
+# Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+graph_symbol_proc = "default"
+
+#* Manually set which boxes to show. Available values are "cpu mem net proc", separate values with whitespace.
+shown_boxes = "cpu mem net proc"
+
+#* Update time in milliseconds, recommended 2000 ms or above for better sample times for graphs.
+update_ms = 2000
+
+#* Processes sorting, "pid" "program" "arguments" "threads" "user" "memory" "cpu lazy" "cpu direct",
+#* "cpu lazy" sorts top process over time (easier to follow), "cpu direct" updates top process directly.
+proc_sorting = "cpu lazy"
+
+#* Reverse sorting order, True or False.
+proc_reversed = False
+
+#* Show processes as a tree.
+proc_tree = False
+
+#* Use the cpu graph colors in the process list.
+proc_colors = True
+
+#* Use a darkening gradient in the process list.
+proc_gradient = True
+
+#* If process cpu usage should be of the core it's running on or usage of the total available cpu power.
+proc_per_core = False
+
+#* Show process memory as bytes instead of percent.
+proc_mem_bytes = True
+
+#* Show cpu graph for each process.
+proc_cpu_graphs = True
+
+#* Use /proc/[pid]/smaps for memory information in the process info box (very slow but more accurate)
+proc_info_smaps = False
+
+#* Show proc box on left side of screen instead of right.
+proc_left = False
+
+#* (Linux) Filter processes tied to the Linux kernel(similar behavior to htop).
+proc_filter_kernel = False
+
+#* Sets the CPU stat shown in upper half of the CPU graph, "total" is always available.
+#* Select from a list of detected attributes from the options menu.
+cpu_graph_upper = "total"
+
+#* Sets the CPU stat shown in lower half of the CPU graph, "total" is always available.
+#* Select from a list of detected attributes from the options menu.
+cpu_graph_lower = "total"
+
+#* Toggles if the lower CPU graph should be inverted.
+cpu_invert_lower = True
+
+#* Set to True to completely disable the lower CPU graph.
+cpu_single_graph = False
+
+#* Show cpu box at bottom of screen instead of top.
+cpu_bottom = False
+
+#* Shows the system uptime in the CPU box.
+show_uptime = True
+
+#* Show cpu temperature.
+check_temp = True
+
+#* Which sensor to use for cpu temperature, use options menu to select from list of available sensors.
+cpu_sensor = "Auto"
+
+#* Show temperatures for cpu cores also if check_temp is True and sensors has been found.
+show_coretemp = True
+
+#* Set a custom mapping between core and coretemp, can be needed on certain cpus to get correct temperature for correct core.
+#* Use lm-sensors or similar to see which cores are reporting temperatures on your machine.
+#* Format "x:y" x=core with wrong temp, y=core with correct temp, use space as separator between multiple entries.
+#* Example: "4:0 5:1 6:3"
+cpu_core_map = ""
+
+#* Which temperature scale to use, available values: "celsius", "fahrenheit", "kelvin" and "rankine".
+temp_scale = "celsius"
+
+#* Use base 10 for bits/bytes sizes, KB = 1000 instead of KiB = 1024.
+base_10_sizes = False
+
+#* Show CPU frequency.
+show_cpu_freq = True
+
+#* Draw a clock at top of screen, formatting according to strftime, empty string to disable.
+#* Special formatting: /host = hostname | /user = username | /uptime = system uptime
+clock_format = "%X"
+
+#* Update main ui in background when menus are showing, set this to false if the menus is flickering too much for comfort.
+background_update = True
+
+#* Custom cpu model name, empty string to disable.
+custom_cpu_name = ""
+
+#* Optional filter for shown disks, should be full path of a mountpoint, separate multiple values with whitespace " ".
+#* Begin line with "exclude=" to change to exclude filter, otherwise defaults to "most include" filter. Example: disks_filter="exclude=/boot /home/user".
+disks_filter = ""
+
+#* Show graphs instead of meters for memory values.
+mem_graphs = True
+
+#* Show mem box below net box instead of above.
+mem_below_net = False
+
+#* Count ZFS ARC in cached and available memory.
+zfs_arc_cached = True
+
+#* If swap memory should be shown in memory box.
+show_swap = True
+
+#* Show swap as a disk, ignores show_swap value above, inserts itself after first disk.
+swap_disk = True
+
+#* If mem box should be split to also show disks info.
+show_disks = True
+
+#* Filter out non physical disks. Set this to False to include network disks, RAM disks and similar.
+only_physical = True
+
+#* Read disks list from /etc/fstab. This also disables only_physical.
+use_fstab = True
+
+#* Setting this to True will hide all datasets, and only show ZFS pools. (IO stats will be calculated per-pool)
+zfs_hide_datasets = False
+
+#* Set to true to show available disk space for privileged users.
+disk_free_priv = False
+
+#* Toggles if io activity % (disk busy time) should be shown in regular disk usage view.
+show_io_stat = True
+
+#* Toggles io mode for disks, showing big graphs for disk read/write speeds.
+io_mode = False
+
+#* Set to True to show combined read/write io graphs in io mode.
+io_graph_combined = False
+
+#* Set the top speed for the io graphs in MiB/s (100 by default), use format "mountpoint:speed" separate disks with whitespace " ".
+#* Example: "/mnt/media:100 /:20 /boot:1".
+io_graph_speeds = ""
+
+#* Set fixed values for network graphs in Mebibits. Is only used if net_auto is also set to False.
+net_download = 100
+
+net_upload = 100
+
+#* Use network graphs auto rescaling mode, ignores any values set above and rescales down to 10 Kibibytes at the lowest.
+net_auto = True
+
+#* Sync the auto scaling for download and upload to whichever currently has the highest scale.
+net_sync = True
+
+#* Starts with the Network Interface specified here.
+net_iface = ""
+
+#* Show battery stats in top right if battery is present.
+show_battery = True
+
+#* Which battery to use if multiple are present. "Auto" for auto detection.
+selected_battery = "Auto"
+
+#* Set loglevel for "~/.config/btop/btop.log" levels are: "ERROR" "WARNING" "INFO" "DEBUG".
+#* The level set includes all lower levels, i.e. "DEBUG" will show all logging info.
+log_level = "WARNING"
+#+end_src
+*** color scheme - [[file:~/.config/btop/themes/catppuccin_frappe.theme][.config/btop/themes/catppuccin_frappe.theme]]
+#+begin_src conf :tangle ~/.config/btop/themes/catppuccin_frappe.theme
+# Main background, empty for terminal default, need to be empty if you want transparent background
+theme[main_bg]="#303446"
+
+# Main text color
+theme[main_fg]="#C6D0F5"
+
+# Title color for boxes
+theme[title]="#C6D0F5"
+
+# Highlight color for keyboard shortcuts
+theme[hi_fg]="#8CAAEE"
+
+# Background color of selected item in processes box
+theme[selected_bg]="#51576D"
+
+# Foreground color of selected item in processes box
+theme[selected_fg]="#8CAAEE"
+
+# Color of inactive/disabled text
+theme[inactive_fg]="#838BA7"
+
+# Color of text appearing on top of graphs, i.e uptime and current network graph scaling
+theme[graph_text]="#F2D5CF"
+
+# Background color of the percentage meters
+theme[meter_bg]="#51576D"
+
+# Misc colors for processes box including mini cpu graphs, details memory graph and details status text
+theme[proc_misc]="#F2D5CF"
+
+# CPU, Memory, Network, Proc box outline colors
+theme[cpu_box]="#ca9ee6" #Mauve
+theme[mem_box]="#a6d189" #Green
+theme[net_box]="#ea999c" #Maroon
+theme[proc_box]="#8caaee" #Blue
+
+# Box divider line and small boxes line color
+theme[div_line]="#737994"
+
+# Temperature graph color (Green -> Yellow -> Red)
+theme[temp_start]="#a6d189"
+theme[temp_mid]="#e5c890"
+theme[temp_end]="#e78284"
+
+# CPU graph colors (Teal -> Lavender)
+theme[cpu_start]="#81c8be"
+theme[cpu_mid]="#85c1dc"
+theme[cpu_end]="#babbf1"
+
+# Mem/Disk free meter (Mauve -> Lavender -> Blue)
+theme[free_start]="#ca9ee6"
+theme[free_mid]="#babbf1"
+theme[free_end]="#8caaee"
+
+# Mem/Disk cached meter (Sapphire -> Lavender)
+theme[cached_start]="#85c1dc"
+theme[cached_mid]="#8caaee"
+theme[cached_end]="#babbf1"
+
+# Mem/Disk available meter (Peach -> Red)
+theme[available_start]="#ef9f76"
+theme[available_mid]="#ea999c"
+theme[available_end]="#e78284"
+
+# Mem/Disk used meter (Green -> Sky)
+theme[used_start]="#a6d189"
+theme[used_mid]="#81c8be"
+theme[used_end]="#99d1db"
+
+# Download graph colors (Peach -> Red)
+theme[download_start]="#ef9f76"
+theme[download_mid]="#ea999c"
+theme[download_end]="#e78284"
+
+# Upload graph colors (Green -> Sky)
+theme[upload_start]="#a6d189"
+theme[upload_mid]="#81c8be"
+theme[upload_end]="#99d1db"
+
+# Process box color gradient for threads, mem and cpu usage (Sapphire -> Mauve)
+theme[process_start]="#85c1dc"
+theme[process_mid]="#babbf1"
+theme[process_end]="#ca9ee6"
+#+end_src
+** doom
+*** config - [[file:~/.config/doom/config.el][.config/doom/config.el]]
+#+begin_src emacs-lisp :tangle ~/.config/doom/config.el
+
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+;; Place your private configuration here! Remember, you do not need to run 'doom
+;; sync' after modifying this file!
+
+;; Some functionality uses this to identify you, e.g. GPG configuration, email
+;; clients, file templates and snippets. It is optional.
+;; (setq user-full-name "John Doe"
+;;       user-mail-address "john@doe.com")
+
+;; Doom exposes five (optional) variables for controlling fonts in Doom:
+;;
+;; - `doom-font' -- the primary font to use
+;; - `doom-variable-pitch-font' -- a non-monospace font (where applicable)
+;; - `doom-big-font' -- used for `doom-big-font-mode'; use this for
+;;   presentations or streaming.
+;; - `doom-symbol-font' -- for symbols
+;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
+;;
+;; See 'C-h v doom-font' for documentation and more examples of what they
+;; accept. For example:
+;;
+;;(setq doom-font (font-spec :family "Fira Code" :size 12 :weight 'semi-light)
+;;      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
+(setq doom-font (font-spec :family "LXGW WenKai" :size 20)
+      doom-variable-pitch-font (font-spec :family "LXGW WenKai" :size 20))
+
+;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
+;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
+;; refresh your font settings. If Emacs still can't find your font, it likely
+;; wasn't installed correctly. Font issues are rarely Doom issues!
+
+;; There are two ways to load a theme. Both assume the theme is installed and
+;; available. You can either set `doom-theme' or manually load a theme with the
+;; `load-theme' function. This is the default:
+(setq doom-theme 'catppuccin)
+(setq catppuccin-flavor 'frappe)
+
+;; This determines the style of line numbers in effect. If set to `nil', line
+;; numbers are disabled. For relative line numbers, set this to `relative'.
+(setq display-line-numbers-type 'relative)
+
+;; If you use `org' and don't want your org files in the default location below,
+;; change `org-directory'. It must be set before org loads!
+(setq org-directory "~/Document/org/")
+
+(org-babel-do-load-languages
+  'org-babel-load-languages
+  '(
+    (emacs-lisp . t)
+    (sh . t)
+    (python . t)))
+
+(setq dired-open-extensions '(
+                              ("mp4" . "mpv")))
+
+(setq browse-url-browser-function 'browse-url-generic
+      browse-url-generic-program "brave-browser-stable")
+
+;; Whenever you reconfigure a package, make sure to wrap your config in an
+;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
+;;
+;;   (after! PACKAGE
+;;     (setq x y))
+;;
+;; The exceptions to this rule:
+;;
+;;   - Setting file/directory variables (like `org-directory')
+;;   - Setting variables which explicitly tell you to set them before their
+;;     package is loaded (see 'C-h v VARIABLE' to look up their documentation).
+;;   - Setting doom variables (which start with 'doom-' or '+').
+;;
+;; Here are some additional functions/macros that will help you configure Doom.
+;;
+;; - `load!' for loading external *.el files relative to this one
+;; - `use-package!' for configuring packages
+;; - `after!' for running code after a package has loaded
+;; - `add-load-path!' for adding directories to the `load-path', relative to
+;;   this file. Emacs searches the `load-path' when you load packages with
+;;   `require' or `use-package'.
+;; - `map!' for binding new keys
+;;
+;; To get information about any of these functions/macros, move the cursor over
+;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
+;; This will open documentation for it, including demos of how they are used.
+;; Alternatively, use `C-h o' to look up a symbol (functions, variables, faces,
+;; etc).
+;;
+;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
+;; they are implemented.
+
+#+end_src
+*** module - [[file:~/.config/doom/init.el][.config/doom/init.el]]
+#+begin_src emacs-lisp :tangle ~/.config/doom/init.el
+
+;;; init.el -*- lexical-binding: t; -*-
+
+;; This file controls what Doom modules are enabled and what order they load
+;; in. Remember to run 'doom sync' after modifying it!
+
+;; NOTE Press 'SPC h d h' (or 'C-h d h' for non-vim users) to access Doom's
+;;      documentation. There you'll find a link to Doom's Module Index where all
+;;      of our modules are listed, including what flags they support.
+
+;; NOTE Move your cursor over a module's name (or its flags) and press 'K' (or
+;;      'C-c c k' for non-vim users) to view its documentation. This works on
+;;      flags as well (those symbols that start with a plus).
+;;
+;;      Alternatively, press 'gd' (or 'C-c c d') on a module to browse its
+;;      directory (for easy access to its source code).
+
+(doom! :input
+       ;;bidi              ; (tfel ot) thgir etirw uoy gnipleh
+       ;;chinese
+       ;;japanese
+       ;;layout            ; auie,ctsrnm is the superior home row
+
+       :completion
+       company           ; the ultimate code completion backend
+       ;;helm              ; the *other* search engine for love and life
+       ;;ido               ; the other *other* search engine...
+       ;;ivy               ; a search engine for love and life
+       vertico           ; the search engine of the future
+
+       :ui
+       ;;deft              ; notational velocity for Emacs
+       doom              ; what makes DOOM look the way it does
+       ;;doom-dashboard    ; a nifty splash screen for Emacs
+       ;;doom-quit         ; DOOM quit-message prompts when you quit Emacs
+       ;;(emoji +unicode)  ; 🙂
+       hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
+       ;;hydra
+       ;;indent-guides     ; highlighted indent columns
+       ligatures         ; ligatures and symbols to make your code pretty again
+       ;;minimap           ; show a map of the code on the side
+       modeline          ; snazzy, Atom-inspired modeline, plus API
+       ;;nav-flash         ; blink cursor line after big motions
+       ;;neotree           ; a project drawer, like NERDTree for vim
+       ophints           ; highlight the region an operation acts on
+       (popup +defaults)   ; tame sudden yet inevitable temporary windows
+       ;;tabs              ; a tab bar for Emacs
+       ;;treemacs          ; a project drawer, like neotree but cooler
+       ;;unicode           ; extended unicode support for various languages
+       (vc-gutter +pretty) ; vcs diff in the fringe
+       vi-tilde-fringe   ; fringe tildes to mark beyond EOB
+       ;;window-select     ; visually switch windows
+       workspaces        ; tab emulation, persistence & separate workspaces
+       ;;zen               ; distraction-free coding or writing
+
+       :editor
+       (evil +everywhere); come to the dark side, we have cookies
+       file-templates    ; auto-snippets for empty files
+       fold              ; (nigh) universal code folding
+       ;;(format +onsave)  ; automated prettiness
+       ;;god               ; run Emacs commands without modifier keys
+       ;;lispy             ; vim for lisp, for people who don't like vim
+       ;;multiple-cursors  ; editing in many places at once
+       ;;objed             ; text object editing for the innocent
+       ;;parinfer          ; turn lisp into python, sort of
+       ;;rotate-text       ; cycle region at point between text candidates
+       snippets          ; my elves. They type so I don't have to
+       ;;word-wrap         ; soft wrapping with language-aware indent
+
+       :emacs
+       dired             ; making dired pretty [functional]
+       electric          ; smarter, keyword-based electric-indent
+       ibuffer         ; interactive buffer management
+       undo              ; persistent, smarter undo for your inevitable mistakes
+       vc                ; version-control and Emacs, sitting in a tree
+
+       :term
+       ;;eshell            ; the elisp shell that works everywhere
+       ;;shell             ; simple shell REPL for Emacs
+       ;;term              ; basic terminal emulator for Emacs
+       ;;vterm             ; the best terminal emulation in Emacs
+
+       :checkers
+       syntax              ; tasing you for every semicolon you forget
+       ;;(spell +flyspell) ; tasing you for misspelling mispelling
+       ;;grammar           ; tasing grammar mistake every you make
+
+       :tools
+       ;;ansible
+       ;;biblio            ; Writes a PhD for you (citation needed)
+       ;;collab            ; buffers with friends
+       ;;debugger          ; FIXME stepping through code, to help you add bugs
+       ;;direnv
+       ;;docker
+       ;;editorconfig      ; let someone else argue about tabs vs spaces
+       ;;ein               ; tame Jupyter notebooks with emacs
+       (eval +overlay)     ; run code, run (also, repls)
+       ;;gist              ; interacting with github gists
+       lookup              ; navigate your code and its documentation
+       ;;lsp               ; M-x vscode
+       magit             ; a git porcelain for Emacs
+       ;;make              ; run make tasks from Emacs
+       ;;pass              ; password manager for nerds
+       pdf               ; pdf enhancements
+       ;;prodigy           ; FIXME managing external services & code builders
+       ;;rgb               ; creating color strings
+       ;;taskrunner        ; taskrunner for all your projects
+       ;;terraform         ; infrastructure as code
+       ;;tmux              ; an API for interacting with tmux
+       tree-sitter       ; syntax and parsing, sitting in a tree...
+       ;;upload            ; map local to remote projects via ssh/ftp
+
+       :os
+       ;;(:if IS-MAC macos)  ; improve compatibility with macOS
+       tty               ; improve the terminal Emacs experience
+
+       :lang
+       ;;agda              ; types of types of types of types...
+       ;;beancount         ; mind the GAAP
+       ;;(cc +lsp)         ; C > C++ == 1
+       ;;clojure           ; java with a lisp
+       ;;common-lisp       ; if you've seen one lisp, you've seen them all
+       ;;coq               ; proofs-as-programs
+       ;;crystal           ; ruby at the speed of c
+       ;;csharp            ; unity, .NET, and mono shenanigans
+       ;;data              ; config/data formats
+       ;;(dart +flutter)   ; paint ui and not much else
+       ;;dhall
+       ;;elixir            ; erlang done right
+       ;;elm               ; care for a cup of TEA?
+       emacs-lisp        ; drown in parentheses
+       ;;erlang            ; an elegant language for a more civilized age
+       ;;ess               ; emacs speaks statistics
+       ;;factor
+       ;;faust             ; dsp, but you get to keep your soul
+       ;;fortran           ; in FORTRAN, GOD is REAL (unless declared INTEGER)
+       ;;fsharp            ; ML stands for Microsoft's Language
+       ;;fstar             ; (dependent) types and (monadic) effects and Z3
+       ;;gdscript          ; the language you waited for
+       ;;(go +lsp)         ; the hipster dialect
+       ;;(graphql +lsp)    ; Give queries a REST
+       ;;(haskell +lsp)    ; a language that's lazier than I am
+       ;;hy                ; readability of scheme w/ speed of python
+       ;;idris             ; a language you can depend on
+       json              ; At least it ain't XML
+       ;;(java +lsp)       ; the poster child for carpal tunnel syndrome
+       ;;javascript        ; all(hope(abandon(ye(who(enter(here))))))
+       ;;julia             ; a better, faster MATLAB
+       ;;kotlin            ; a better, slicker Java(Script)
+       ;;latex             ; writing papers in Emacs has never been so fun
+       ;;lean              ; for folks with too much to prove
+       ;;ledger            ; be audit you can be
+       ;;lua               ; one-based indices? one-based indices
+       ;;markdown          ; writing docs for people to ignore
+       ;;nim               ; python + lisp at the speed of c
+       ;;nix               ; I hereby declare "nix geht mehr!"
+       ;;ocaml             ; an objective camel
+       org               ; organize your plain life in plain text
+       ;;php               ; perl's insecure younger brother
+       ;;plantuml          ; diagrams for confusing people more
+       ;;purescript        ; javascript, but functional
+       ;;python            ; beautiful is better than ugly
+       ;;qt                ; the 'cutest' gui framework ever
+       ;;racket            ; a DSL for DSLs
+       ;;raku              ; the artist formerly known as perl6
+       ;;rest              ; Emacs as a REST client
+       ;;rst               ; ReST in peace
+       ;;(ruby +rails)     ; 1.step {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
+       ;;(rust +lsp)       ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
+       ;;scala             ; java, but good
+       ;;(scheme +guile)   ; a fully conniving family of lisps
+       sh                ; she sells {ba,z,fi}sh shells on the C xor
+       ;;sml
+       ;;solidity          ; do you need a blockchain? No.
+       ;;swift             ; who asked for emoji variables?
+       ;;terra             ; Earth and Moon in alignment for performance.
+       ;;web               ; the tubes
+       ;;yaml              ; JSON, but readable
+       ;;zig               ; C, but simpler
+
+       :email
+       ;;(mu4e +org +gmail)
+       ;;notmuch
+       ;;(wanderlust +gmail)
+
+       :app
+       ;;calendar
+       ;;emms
+       ;;everywhere        ; *leave* Emacs!? You must be joking
+       ;;irc               ; how neckbeards socialize
+       ;;(rss +org)        ; emacs as an RSS reader
+       ;;twitter           ; twitter client https://twitter.com/vnought
+
+       :config
+       ;;literate
+       (default +bindings +smartparens))
+
+#+end_src
+*** package - [[file:~/.config/doom/packages.el][.config/doom/packages.el]]
+#+begin_src emacs-lisp :tangle ~/.config/doom/packages.el
+
+;; -*- no-byte-compile: t; -*-
+;;; $DOOMDIR/packages.el
+
+;; To install a package with Doom you must declare them here and run 'doom sync'
+;; on the command line, then restart Emacs for the changes to take effect -- or
+;; use 'M-x doom/reload'.
+
+;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
+;(package! some-package)
+
+(package! catppuccin-theme)
+(package! dired-open)
+
+;; To install a package directly from a remote git repo, you must specify a
+;; `:recipe'. You'll find documentation on what `:recipe' accepts here:
+;; https://github.com/radian-software/straight.el#the-recipe-format
+;(package! another-package
+;  :recipe (:host github :repo "username/repo"))
+
+;; If the package you are trying to install does not contain a PACKAGENAME.el
+;; file, or is located in a subdirectory of the repo, you'll need to specify
+;; `:files' in the `:recipe':
+;(package! this-package
+;  :recipe (:host github :repo "username/repo"
+;           :files ("some-file.el" "src/lisp/*.el")))
+
+;; If you'd like to disable a package included with Doom, you can do so here
+;; with the `:disable' property:
+;(package! builtin-package :disable t)
+
+(package! doom-themes :disable t)
+
+;; You can override the recipe of a built in package without having to specify
+;; all the properties for `:recipe'. These will inherit the rest of its recipe
+;; from Doom or MELPA/ELPA/Emacsmirror:
+;(package! builtin-package :recipe (:nonrecursive t))
+;(package! builtin-package-2 :recipe (:repo "myfork/package"))
+
+;; Specify a `:branch' to install a package from a particular branch or tag.
+;; This is required for some packages whose default branch isn't 'master' (which
+;; our package manager can't deal with; see radian-software/straight.el#279)
+;(package! builtin-package :recipe (:branch "develop"))
+
+;; Use `:pin' to specify a particular commit to install.
+;(package! builtin-package :pin "1a2b3c4d5e")
+
+;; Doom's packages are pinned to a specific commit and updated from release to
+;; release. The `unpin!' macro allows you to unpin single packages...
+;(unpin! pinned-package)
+;; ...or multiple packages
+;(unpin! pinned-package another-pinned-package)
+;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
+;(unpin! t)
+
+#+end_src
+** fcitx5
+*** general - [[file:~/.config/fcitx5/config][.config/fcitx5/config]]
+#+begin_src conf :tangle ~/.config/fcitx5/config
+[Hotkey]
+# 反复按切换键时进行轮换
+EnumerateWithTriggerKeys=True
+# 临时在当前和第一个输入法之间切换
+AltTriggerKeys=
+# 向前切换输入法
+EnumerateForwardKeys=
+# 向后切换输入法
+EnumerateBackwardKeys=
+# 轮换输入法时跳过第一个输入法
+EnumerateSkipFirst=False
+# 向前切换输入分组
+EnumerateGroupForwardKeys=
+# 向后切换输入法分组
+EnumerateGroupBackwardKeys=
+# 激活输入法
+ActivateKeys=
+# 取消激活输入法
+DeactivateKeys=
+# 默认跳转前一个候选词
+PrevCandidate=
+# 默认跳转下一个候选词
+NextCandidate=
+# 切换是否使用嵌入预编辑
+TogglePreedit=
+
+[Hotkey/TriggerKeys]
+0=Super+A
+
+[Hotkey/PrevPage]
+0=Up
+
+[Hotkey/NextPage]
+0=Down
+
+[Behavior]
+# 默认状态为激活
+ActiveByDefault=False
+# 共享输入状态
+ShareInputState=False
+# 在程序中显示预编辑文本
+PreeditEnabledByDefault=False
+# 切换输入法时显示输入法信息
+ShowInputMethodInformation=True
+# 在焦点更改时显示输入法信息
+showInputMethodInformationWhenFocusIn=False
+# 显示紧凑的输入法信息
+CompactInputMethodInformation=True
+# 显示第一个输入法的信息
+ShowFirstInputMethodInformation=True
+# 默认页大小
+DefaultPageSize=9
+# 覆盖 Xkb 选项
+OverrideXkbOption=False
+# 自定义 Xkb 选项
+CustomXkbOption=
+# Force Enabled Addons
+EnabledAddons=
+# Force Disabled Addons
+DisabledAddons=
+# Preload input method to be used by default
+PreloadInputMethod=True
+#+end_src
+*** ui - [[file:~/.config/fcitx5/conf/classicui.conf][.config/fcitx5/conf/classicui.conf]]
+**** dark - [[file:~/.config/fcitx5/conf/light.conf][.config/fcitx5/conf/dark.conf]]
+#+begin_src conf :tangle ~/.config/fcitx5/conf/dark.conf
+# 垂直候选列表
+Vertical Candidate List=False
+# 按每个屏幕 DPI 显示
+PerScreenDPI=True
+# 使用鼠标滚轮翻页
+WheelForPaging=True
+# 字体
+Font="LXGW WenKai 12"
+# 菜单字体
+MenuFont="LXGW WenKai 12"
+# 托盘字体
+TrayFont="LXGW WenKai 12"
+# 托盘标签轮廓颜色
+TrayOutlineColor=#c6d0f5
+# 托盘标签文本颜色
+TrayTextColor=#c6d0f5
+# 优先使用文字图标
+PreferTextIcon=True
+# 在图标中显示布局名称
+ShowLayoutNameInIcon=True
+# 使用输入法的语言来显示文字
+UseInputMethodLangaugeToDisplayText=True
+# 主题
+Theme=light
+# 固定 Wayland 的字体 DPI
+ForceWaylandDPI=0
+#+end_src
+**** light - [[file:~/.config/fcitx5/conf/dark.conf][.config/fcitx5/conf/light.conf]]
+#+begin_src conf :tangle ~/.config/fcitx5/conf/light.conf
+# 垂直候选列表
+Vertical Candidate List=False
+# 按每个屏幕 DPI 显示
+PerScreenDPI=True
+# 使用鼠标滚轮翻页
+WheelForPaging=True
+# 字体
+Font="LXGW WenKai 12"
+# 菜单字体
+MenuFont="LXGW WenKai 12"
+# 托盘字体
+TrayFont="LXGW WenKai 12"
+# 托盘标签轮廓颜色
+TrayOutlineColor=#303446
+# 托盘标签文本颜色
+TrayTextColor=#303446
+# 优先使用文字图标
+PreferTextIcon=True
+# 在图标中显示布局名称
+ShowLayoutNameInIcon=True
+# 使用输入法的语言来显示文字
+UseInputMethodLangaugeToDisplayText=True
+# 主题
+Theme=dark
+# 固定 Wayland 的字体 DPI
+ForceWaylandDPI=0
+#+end_src
+*** wayland - [[file:~/.config/fcitx5/conf/waylandim.conf][.config/fcitx5/conf/waylandim.conf]]
+#+begin_src conf :tangle ~/.config/fcitx5/conf/waylandim.conf
+# 检测当前运行的程序 (需要重启)
+DetectApplication=True
+#+end_src
+** go-musicfox
+*** config - [[file:~/.config/go-musicfox/go-musicfox.ini][.config/go-musicfox/go-musicfox.ini]]
+#+begin_src conf :tangle ~/.config/go-musicfox/go-musicfox.ini
+# 启动页配置
+[startup]
+# 是否显示启动页
+show=true
+# 启动页进度条是否有回弹效果
+progressOutBounce=true
+# 启动页时长
+loadingSeconds=2
+# 启动页欢迎语
+welcome=RockIt
+# 启动时自动签到
+signin=true
+
+# 进度条配置
+[progress]
+# 进度条已加载字符
+fullChar="#"
+firstFullChar="#"
+lastFullChar="#"
+# 进度条未加载字符
+emptyChar="."
+firstEmptyChar="."
+lastEmptyChar="."
+
+# 主页面配置
+[main]
+# 是否显示标题
+showTitle=true
+# 加载中提示
+loadingText=[加载中...]
+# 歌曲音质，standard,higher,exhigh,lossless,hires
+songLevel=higher
+# 主题颜色
+# 随机
+# primaryColor=random
+primaryColor="#89b4fa"
+# windows,linux下的通知图标
+notifyIcon="logo.png"
+# 是否显示歌词
+showLyric=true
+# 歌词偏移 ms
+lyricOffset=0
+# 显示歌词翻译
+showLyricTrans=true
+# 是否显示通知信息
+showNotify=true
+# 开启pprof, --pprof时会开启
+pprofPort=9876
+# altScreen显示模式
+altScreen=true
+# 开启鼠标事件
+enableMouseEvent=false
+# 双列显示，开启务必使用等宽字体
+doubleColumn=true
+# 下载目录，默认为${MUSICFOX_ROOT}/download
+downloadDir=~/Music
+# 是否显示歌单下所有歌曲，默认不开启，仅获取歌单前1000首，开启后可能会占用更多内存（大量歌曲数据）和带宽（会同时发送多个请求获取歌单下歌曲数据）
+showAllSongsOfPlaylist=false
+
+[player]
+# 播放引擎 beep / mpd(需要安装配置mpd) / osx(Mac才可用)
+# 不填Mac默认使用osx，其他系统默认使用beep（推荐的配置）
+engine=beep
+# beep使用的mp3解码器，可选：go-mp3, minimp3 (minimp3更少的CPU占用，但是稳定性不如go-mp3)
+beepMp3Decoder=go-mp3
+
+# mpd配置
+# mpdBin=/usr/local/bin/mpd
+# !!!注意!!! 一定要在配置文件中设置pid_file，否则在退出时不会kill掉mpd进程
+# mpdConfigFile=/Users/anhoder/.mpd/mpd.conf
+# tcp 或 unix
+# mpdNetwork=unix
+# tcp时填写ip+port(例如:127.0.0.1:1234)，unix时填写socket文件路径
+# mpdAddr=
+
+[unm]
+# UNM开关
+switch=true
+# UNM源: kuwo,kugou,migu,qq
+sources=kuwo
+# UNM搜索其他平台限制 0-3
+searchLimit=0
+# 解除会员限制
+enableLocalVip=true
+# 解除音质限制
+unlockSoundEffects=true
+# QQ音乐cookie文件
+qqCookieFile=
+#+end_src
+** hypr
+*** main - [[file:~/.config/hypr/hyprland.conf][.config/hypr/hyprland.conf]]
+**** color scheme
+#+begin_src conf
+source = ~/.config/hypr/conf.d/scheme.conf
+#+end_src
+**** source
+#+begin_src conf :tangle ~/.config/hypr/hyprland.conf
+source = ~/.config/hypr/conf.d/00-environment.conf
+source = ~/.config/hypr/conf.d/01-preload.conf
+source = ~/.config/hypr/conf.d/02-output.conf
+source = ~/.config/hypr/conf.d/02-input.conf
+source = ~/.config/hypr/conf.d/03-layout.conf
+source = ~/.config/hypr/conf.d/03-animation.conf
+source = ~/.config/hypr/conf.d/04-rule.conf
+source = ~/.config/hypr/conf.d/05-binding.conf
+source = ~/.config/hypr/conf.d/06-submap.conf
+#+end_src
+*** color scheme - [[file:~/.config/hypr/conf.d/scheme.conf][.config/hypr/conf.d/scheme.conf]]
+**** frappe - [[file:~/.config/hypr/conf.d/frappe.conf][.config/hypr/conf.d/frappe.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/frappe.conf
+$rosewaterAlpha = fff5e0dc
+$flamingoAlpha  = fff2cdcd
+$pinkAlpha      = fff5c2e7
+$mauveAlpha     = ffcba6f7
+$redAlpha       = fff38ba8
+$maroonAlpha    = ffeba0ac
+$peachAlpha     = fffab387
+$yellowAlpha    = fff9e2af
+$greenAlpha     = ffa6e3a1
+$tealAlpha      = ff94e2d5
+$skyAlpha       = ff89dceb
+$sapphireAlpha  = ff74c7ec
+$blueAlpha      = ff89b4fa
+$lavenderAlpha  = ffb4befe
+
+$textAlpha      = ffcdd6f4
+$subtext1Alpha  = ffbac2de
+$subtext0Alpha  = ffa6adc8
+
+$overlay2Alpha  = ff9399b2
+$overlay1Alpha  = ff7f849c
+$overlay0Alpha  = ff6c7086
+
+$surface2Alpha  = ff585b70
+$surface1Alpha  = ff45475a
+$surface0Alpha  = ff313244
+
+$baseAlpha      = ff1e1e2e
+$mantleAlpha    = ff181825
+$crustAlpha     = ff11111b
+
+$rosewater = 0xfff5e0dc
+$flamingo  = 0xfff2cdcd
+$pink      = 0xfff5c2e7
+$mauve     = 0xffcba6f7
+$red       = 0xfff38ba8
+$maroon    = 0xffeba0ac
+$peach     = 0xfffab387
+$yellow    = 0xfff9e2af
+$green     = 0xffa6e3a1
+$teal      = 0xff94e2d5
+$sky       = 0xff89dceb
+$sapphire  = 0xff74c7ec
+$blue      = 0xff89b4fa
+$lavender  = 0xffb4befe
+
+$text      = 0xffcdd6f4
+$subtext1  = 0xffbac2de
+$subtext0  = 0xffa6adc8
+
+$overlay2  = 0xff9399b2
+$overlay1  = 0xff7f849c
+$overlay0  = 0xff6c7086
+
+$surface2  = 0xff585b70
+$surface1  = 0xff45475a
+$surface0  = 0xff313244
+
+$base      = 0xff1e1e2e
+$mantle    = 0xff181825
+$crust     = 0xff11111b
+#+end_src
+*** environment - [[file:~/.config/hypr/conf.d/00-environment.conf][.config/hypr/conf.d/00-environment]]
+**** xdg
+#+begin_src conf :tangle ~/.config/hypr/conf.d/00-environment.conf
+env = XDG_CURRENT_DESKTOP,Hyprland
+env = XDG_SESSION_TYPE,wayland
+env = XDG_SESSION_DESKTOP,Hyprland
+#+end_src
+**** localization
+#+begin_src conf :tangle ~/.config/hypr/conf.d/00-environment.conf
+env = LANG,zh_CN.UTF-8
+env = LC_CTYPE,C.UTF-8
+#env = GTK_IM_MODULE,fcitx
+env = QT_IM_MODULE,fcitx
+env = XMODIFIERS,@im=fcitx
+env = SDL_IM_MODULE,fcitx
+env = GLFW_IM_MODULE,fcitx
+env = INPUT_METHOD,fcitx
+env = IMSETTINGS_MODULE,fcitx
+#+end_src
+**** gtk
+#+begin_src conf :tangle ~/.config/hypr/conf.d/00-environment.conf
+env = GDK_BACKEND,wayland
+#env = GTK_THEME,
+#env = XCURSOR_THEME,
+#env = XCURSOR_SIZE, 32
+#+end_src
+**** qt
+#+begin_src conf :tangle ~/.config/hypr/conf.d/00-environment.conf
+env = QT_QPA_PLATFORM,wayland
+env = QT_QPA_PLATFORMTHEME,qt6ct
+env = QT_AUTO_SCREEN_SCALE_FACTOR,1;1
+env = QT_WAYLAND_DISABLE_WINDOWDECORATION,1
+env = QT_WAYLAND_FORCE_DPI,physical
+#+end_src
+**** misc
+#+begin_src conf :tangle ~/.config/hypr/conf.d/00-environment.conf
+env = SDL_VIDEODRIVER,wayland;x11
+env = CLUTTER_BACKEND,wayland
+#env = WLR_RENDERER,vulkan
+#env = WLR_NO_HARDWARE_CURSORS,1
+env = SDL_VIDEODRIVER,wayland
+env = MOZ_ENABLE_WAYLAND,1
+env = ANV_QUEUE_THREAD_DISABLE,1
+#+end_src
+*** preloading - [[file:~/.config/hypr/conf.d/01-preload.conf][.config/hypr/conf.d/01-preload.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/01-preload.conf
+# XDPH
+#exec-once = xdg-portal-hyprland
+exec-once = /usr/libexec/xdg-desktop-portal
+
+# dbus
+exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+exec-once = systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+
+# keyd
+#exec-once = keyd-application-mapper -d
+
+# init wallpaper engine
+exec-once = swww init
+exec-once = swww-init
+
+# init notification daemon
+exec-once = mako
+
+# init clipboard daemon
+exec-once = wl-clipboard-history -t
+
+# init panel
+exec-once = waybar
+
+# emacs
+exec-once = emacs --daemon
+
+# init IM engine
+exec-once = fcitx5
+
+# usb automount
+#exec-once = udiskie --tray
+#+end_src
+*** output device - [[file:~/.config/hypr/conf.d/02-output.conf][.config/hypr/conf.d/02-output.conf]]
+**** laptop - [[file:~/.config/hypr/conf.d/88-output-laptop.conf][.config/hypr/conf.d/22-output-laptop.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/22-output-laptop.conf
+monitor=eDP-1,2880x1800@60,0x0,1
+monitor=HDMI-A-1,disable
+#+end_src
+# XiaoXinPro14
+**** single monitor - [[file:~/.config/hypr/conf.d/88-output-single.conf][.config/hypr/conf.d/22-output-single.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/22-output-single.conf
+# XiaoMi 27Pro
+monitor=HDMI-A-1,2560x1440@75,0x0,1
+monitor=eDP-1,disable
+#+end_src
+**** dual monitor - [[file:~/.config/hypr/conf.d/88-output-dual.conf][.config/hypr/conf.d/22-output-dual.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/22-output-dual.conf
+# XiaoMi 27Pro: center
+# XiaoXinPro14: right
+monitor=HDMI-A-1,2560x1440@75,0x0,1
+#monitor=eDP-1,2880x1800@60,2560x0,1.5,transform,1.5
+monitor=eDP-1,2880x1800@60,2560x0,1
+#+end_src
+**** triple monitor - [[file:~/.config/hypr/conf.d/88-output-triple.conf][.config/hypr/conf.d/22-output-triple.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/22-output-triple.conf
+# XiaoMi 27Pro: center
+# XiaoXinPro14: right
+monitor=HDMI-A-1,2560x1440@75,0x0,1
+#monitor=eDP-1,2880x1800@60,2560x0,1.5,transform,1.5
+monitor=eDP-1,2880x1800@60,2560x0,1
+#+end_src
+*** input device - [[file:~/.config/hypr/conf.d/02-input.conf][.config/hypr/conf.d/02-input.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/02-input.conf
+input {
+  follow_mouse = 2
+  touchpad {
+    disable_while_typing = false
+    natural_scroll = no
+    tap-to-click = true
+    drag_lock = true
+    tap-and-drag = true
+  }
+  # -1.0 - 1.0, 0 means no modification.
+  sensitivity = 0
+}
+
+gestures {
+  workspace_swipe = true
+  workspace_swipe_fingers = 3
+  workspace_swipe_create_new = false
+}
+
+cursor{
+  inactive_timeout = 3
+}
+#+end_src
+*** layout - [[file:~/.config/hypr/conf.d/03-layout.conf][.config/hypr/conf.d/03-layout.conf]]
+**** light - [[~/.config/hypr/conf.d/33-layout-light.conf][.config/hypr/conf.d/33-layout-light.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/33-layout-light.conf
+$white100 = rgba(c6d0f500)
+$black100 = rgba(30344600)
+
+general {
+  gaps_in = 4
+  gaps_out = 8
+  border_size = 0
+  col.active_border = $white100
+  col.inactive_border = $black100
+  layout = dwindle
+  resize_on_border = true
+}
+
+misc {
+  disable_hyprland_logo = true
+  disable_splash_rendering = true
+}
+
+dwindle {
+  pseudotile = true
+  force_split = 2
+  preserve_split = true
+  special_scale_factor = 0.75
+}
+
+master {
+  special_scale_factor = 0.75
+  mfact = 0.75
+  new_on_top = false
+}
+
+decoration {
+  rounding = 0
+  active_opacity = 0.80
+  inactive_opacity = 0.60
+  fullscreen_opacity = 1.00
+  shadow_range = 8
+  shadow_render_power = 4
+  shadow_ignore_window = true
+  col.shadow = $white100
+  col.shadow_inactive = $black100
+  blur {
+    enabled = true
+    special = false
+    popups = false
+    size = 8
+    passes = 4
+    contrast = 0.128 # 0.0 - 2.0 : 0.8916
+    brightness = 0.128 # 0.0 - 2.0 : 0.8172
+  }
+}
+#+end_src
+**** dark - [[~/.config/hypr/conf.d/33-layout-dark.conf][.config/hypr/conf.d/33-layout-dark.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/33-layout-dark.conf
+$white100 = rgba(c6d0f500)
+$black100 = rgba(30344600)
+
+general {
+  gaps_in = 4
+  gaps_out = 8
+  border_size = 0
+  col.active_border = $black100
+  col.inactive_border = $white100
+  layout = dwindle
+  resize_on_border = true
+}
+
+misc {
+  disable_hyprland_logo = yes
+  disable_splash_rendering = true
+}
+
+dwindle {
+  pseudotile = true
+  force_split = 2
+  preserve_split = true
+  special_scale_factor = 0.75
+}
+
+master {
+  special_scale_factor = 0.75
+  mfact = 0.75
+  new_on_top = false
+}
+
+decoration {
+  rounding = 0
+  active_opacity = 0.80
+  inactive_opacity = 0.60
+  fullscreen_opacity = 1.00
+  shadow_range = 8
+  shadow_render_power = 4
+  shadow_ignore_window = true
+  col.shadow = $white100
+  col.shadow_inactive = $black100
+  blur {
+    enabled = true
+    special = false
+    popups = false
+    size = 8
+    passes = 4
+    contrast = 0.128 # 0.0 - 2.0 : 0.8916
+    brightness = 0.128 # 0.0 - 2.0 : 0.8172
+  }
+}
+#+end_src
+*** animation - [[file:~/.config/hypr/conf.d/03-animation.conf][.config/hypr/conf.d/03-animation.conf]]
+**** minimal - [[~/.config/hypr/conf.d/33-animation-minimal.conf][.config/hypr/conf.d/33-animation-minimal]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/33-animation-minimal.conf
+animations {
+  enabled = false
+}
+#+end_src
+**** balance - [[~/.config/hypr/conf.d/33-animation-balance.conf][.config/hypr/conf.d/33-animation-balance]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/33-animation-balance.conf
+animations {
+  enabled = true
+  bezier = default, 1, 1, 1, 1
+  animation = windowsIn, 1, 3, default, popin
+  animation = windowsOut, 1, 3, default, popin
+  animation = windowsMove, 1, 3, default, slide
+  animation = workspaces, 1, 3, default, slide
+  animation = specialWorkspace, 1, 3, default, slidefadevert
+}
+#+end_src
+**** maximum - [[~/.config/hypr/conf.d/33-animation-maximum.conf][.config/hypr/conf.d/33-animation-maximum]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/33-animation-maximum.conf
+animations {
+  enabled = true
+  bezier = easeOutBack, 0.34, 1.56, 0.64, 1
+  bezier = easeInBack, 0.36, 0, 0.66, -0.56
+  animation = windowsIn, 1, 3, easeOutBack, popin
+  animation = windowsOut, 1, 3, easeOutBack, popin
+  animation = windowsMove, 1, 3, easeOutBack, slide
+  animation = workspaces, 1, 3, easeInBack, slide
+  animation = specialWorkspace, 1, 3, easeOutBack, slidefadevert
+}
+#+end_src
+*** window/workspace rule - [[file:~/.config/hypr/conf.d/04-rule.conf][.config/hypr/conf.d/04-rule.conf]]
+**** laptop - [[file:~/.config/hypr/conf.d/44-rule-laptop.conf][.config/hypr/conf.d/44-rule-laptop.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/44-rule-laptop.conf
+windowrulev2 = fullscreenstate,class:^(emacs)$
+
+windowrulev2 = fullscreenstate, class:^(Brave-browser)$
+windowrulev2 = opaque, class:^(Brave-browser)$
+
+windowrulev2 = fullscreenstate, class:^(org.telegram.desktop)$
+
+windowrulev2 = opaque,class:^(mpv)$
+#windowrulev2 = float,class:^(mpv)$
+#windowrulev2 = center,class:^(mpv)$
+
+windowrule = float, popup
+
+workspace=1, monitor:eDP-1
+workspace=2, monitor:eDP-1, default:true
+workspace=3, monitor:eDP-1
+workspace=4, monitor:eDP-1
+workspace=5, monitor:eDP-1
+workspace=6, monitor:eDP-1
+workspace=7, monitor:eDP-1
+workspace=8, monitor:eDP-1
+workspace=9, monitor:eDP-1
+
+workspace = 1, on-created-empty:emacsclient -n -r -a ""
+
+layerrule = blur, launcher
+#+end_src
+**** single monitor - [[file:~/.config/hypr/conf.d/44-rule-single.conf][.config/hypr/conf.d/44-rule-single.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/44-rule-single.conf
+
+windowrulev2 = fullscreenstate, class:^(emacs)$
+
+windowrulev2 = fullscreenstate, class:^(Brave-browser)$
+windowrulev2 = opaque, class:^(Brave-browser)$
+
+windowrulev2 = fullscreenstate, class:^(org.telegram.desktop)$
+
+windowrulev2 = opaque, class:^(mpv)$
+#windowrulev2 = float, class:^(mpv)$
+#windowrulev2 = center, class:^(mpv)$
+
+windowrule = float, popup
+
+workspace= 1, monitor:HDMI-A-1
+workspace= 2, monitor:HDMI-A-1, default:true
+workspace= 3, monitor:HDMI-A-1
+workspace= 4, monitor:HDMI-A-1
+workspace= 5, monitor:HDMI-A-1
+workspace= 6, monitor:HDMI-A-1
+workspace= 7, monitor:HDMI-A-1
+workspace= 8, monitor:HDMI-A-1
+workspace= 9, monitor:HDMI-A-1
+
+workspace = 1, on-created-empty:emacsclient -n -r -a ""
+
+workspace = special, on-created-empty:kitty
+workspace = special:top, on-created-empty:run-btop
+workspace = special:mixer, on-created-empty:run-pulsemixer
+workspace = special:music, on-created-empty:run-musicfox
+
+layerrule = blur, launcher
+#+end_src
+**** dual monitor - [[file:~/.config/hypr/conf.d/44-rule-dual.conf][.config/hypr/conf.d/44-rule-dual.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/44-rule-dual.conf
+windowrulev2 = fullscreenstate, class:^(emacs)$
+
+windowrulev2 = fullscreenstate, class:^(Brave-browser)$
+windowrulev2 = opaque, class:^(Brave-browser)$
+
+windowrulev2 = fullscreenstate, class:^(org.telegram.desktop)$
+
+windowrulev2 = opaque, class:^(mpv)$
+#windowrulev2 = float, class:^(mpv)$
+#windowrulev2 = center, class:^(mpv)$
+
+windowrule = float, popup
+
+workspace= 1, monitor:HDMI-A-1, default:true
+workspace= 2, monitor:HDMI-A-1
+workspace= 3, monitor:HDMI-A-1
+workspace= 4, monitor:HDMI-A-1
+workspace= 5, monitor:HDMI-A-1
+workspace= 6, monitor:HDMI-A-1
+workspace= 7, monitor:HDMI-A-1
+workspace= 8, monitor:eDP-1
+workspace= 9, monitor:eDP-1
+
+workspace = 1, on-created-empty:emacsclient -n -r -a ""
+workspace = 9, on-created-empty:run-telegram
+
+layerrule = blur, launcher
+#+end_src
+**** triple monitor - [[file:~/.config/hypr/conf.d/44-rule-triple.conf][.config/hypr/conf.d/44-rule-triple.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/44-rule-triple.conf
+windowrulev2 = fullscreenstate, class:^(emacs)$
+
+windowrulev2 = fullscreenstate, class:^(Brave-browser)$
+windowrulev2 = opaque, class:^(Brave-browser)$
+
+windowrulev2 = fullscreenstate, class:^(org.telegram.desktop)$
+
+windowrulev2 = opaque, class:^(mpv)$
+#windowrulev2 = float, class:^(mpv)$
+#windowrulev2 = center, class:^(mpv)$
+
+windowrule = float, popup
+
+workspace= 1, monitor:HDMI-A-1, default:true
+workspace= 2, monitor:HDMI-A-1
+workspace= 3, monitor:HDMI-A-1
+workspace= 4, monitor:HDMI-A-1
+workspace= 5, monitor:HDMI-A-1
+workspace= 6, monitor:HDMI-A-1
+workspace= 7, monitor:HDMI-A-1
+workspace= 8, monitor:HDMI-A-1
+workspace= 9, monitor:eDP-1
+
+layerrule = blur, launcher
+#+end_src
+*** key binding - [[file:~/.config/hypr/conf.d/05-binding.conf][.config/hypr/conf.d/05-binding.conf]]
+**** buitin
+#+begin_src conf :tangle ~/.config/hypr/conf.d/05-binding.conf
+# SUPER: WIN
+$mainMod = SUPER
+# monitor
+bind = $mainMod, minus, focusmonitor, HDMI-A-1
+bind = $mainMod, equal, focusmonitor, eDP-1
+# workspace
+bind = $mainMod, 1, workspace, 1
+bind = $mainMod, 2, workspace, 2
+bind = $mainMod, 3, workspace, 3
+bind = $mainMod, 4, workspace, 4
+bind = $mainMod, 5, workspace, 5
+bind = $mainMod, 6, workspace, 6
+bind = $mainMod, 7, workspace, 7
+bind = $mainMod, 8, workspace, 8
+bind = $mainMod, 9, workspace, 9
+bind = $mainMod, backspace, focusurgentorlast,
+bind = $mainMod, comma, workspace, e-1
+bind = $mainMod, period, workspace, e+1
+# window
+bind = $mainMod, h, movefocus, l
+bind = $mainMod, l, movefocus, r
+bind = $mainMod, k, movefocus, u
+bind = $mainMod, j, movefocus, d
+bind = $mainMod, q, killactive,
+bind = $mainMod, f, fullscreen,
+bind = $mainMod, t, fullscreenstate,
+bind = $mainMod, d, togglefloating,
+bind = $mainMod, s, togglesplit,
+#+end_src
+**** special
+#+begin_src conf :tangle ~/.config/hypr/conf.d/05-binding.conf
+binde = $mainMod, grave, togglespecialworkspace,
+binde = $mainMod Shift, 1, togglespecialworkspace, top
+binde = $mainMod Shift, 2, togglespecialworkspace, mixer
+binde = $mainMod Shift, 3, togglespecialworkspace, music
+#+end_src
+**** shortcut
+#+begin_src conf :tangle ~/.config/hypr/conf.d/05-binding.conf
+# panel
+bind = $mainMod, b, exec, killall -SIGUSR1 waybar
+# launcher
+bind = $mainMod, r, exec, tofi-run | xargs hyprctl dispatch exec
+# terminal
+bind = $mainMod, Return, exec, kitty
+# emacs
+#bind = $mainMod, e, exec, emacsclient -n -r -a ""
+bind = $mainMod, e, exec, emacs
+bind = $mainMod, x, exec, run-emacs
+# web browser
+#bind = $mainMod, i, exec, brave-browser-stable --start-fullscreen
+bind = $mainMod, i, exec, brave-browser-stable
+# fcitx5
+bind = $mainMod, z, exec, fcitx5 -r
+# telegram
+bind = $mainMod, g, exec, tofi-drun | xargs hyprctl dispatch exec
+#+end_src
+**** numpad
+#+begin_src conf
+# kp_1
+bind = $mainMod, KP_End,
+# kp_2
+bind = $mainMod, KP_Down,
+# kp_3
+bind = $mainMod, KP_Next,
+# kp_4
+bind = $mainMod, KP_Left,
+# kp_5
+bind = $mainMod, KP_Begin,
+# kp_6
+bind = $mainMod, KP_Right,
+# kp_7
+bind = $mainMod, KP_Home,
+# kp_8
+bind = $mainMod, KP_Up,
+# kp_9
+bind = $mainMod, KP_Prior,
+# kp_0
+bind = $mainMod, KP_Insert,
+#+end_src
+*** submap - [[file:~/.config/hypr/conf.d/06-submap.conf][.config/hypr/conf.d/06-submap.conf]]
+#+begin_src conf :tangle ~/.config/hypr/conf.d/06-submap.conf
+# workspaces
+# 工作区
+# ----------------------------------------------------------------
+bind = $mainMod, backslash, submap, 移动当前工作区至[ x ]小新[ m ]主屏[ s ]互换
+submap = 移动当前工作区至[ x ]小新[ m ]主屏[ s ]互换
+binde = , x, movecurrentworkspacetomonitor, eDP-1
+binde = , m, movecurrentworkspacetomonitor, HDMI-A-1
+binde = , s, swapactiveworkspaces, eDP-1 HDMI-A-1
+bind = , escape, submap, reset
+submap = reset
+
+# windows
+# 窗口
+# ----------------------------------------------------------------
+bind = $mainMod, bracketleft, submap, 移动当前窗口至[ 1 2 3 4 5 6 7 8 9 ]工作区
+submap = 移动当前窗口至[ 1 2 3 4 5 6 7 8 9 ]工作区
+binde = , 1, movetoworkspacesilent, 1
+binde = , 2, movetoworkspacesilent, 2
+binde = , 3, movetoworkspacesilent, 3
+binde = , 4, movetoworkspacesilent, 4
+binde = , 5, movetoworkspacesilent, 5
+binde = , 6, movetoworkspacesilent, 6
+binde = , 7, movetoworkspacesilent, 7
+binde = , 8, movetoworkspacesilent, 8
+binde = , 9, movetoworkspacesilent, 9
+bind = , escape, submap, reset
+submap = reset
+# ----------------------------------------------------------------
+bind = $mainMod, bracketright, submap, 移动当前窗口至[ 1 2 3 4 5 6 7 8 9 ]工作区并聚焦
+submap = 移动当前窗口至[ 1 2 3 4 5 6 7 8 9 ]工作区并聚焦
+binde = , 1, movetoworkspace, 1
+binde = , 2, movetoworkspace, 2
+binde = , 3, movetoworkspace, 3
+binde = , 4, movetoworkspace, 4
+binde = , 5, movetoworkspace, 5
+binde = , 6, movetoworkspace, 6
+binde = , 7, movetoworkspace, 7
+binde = , 8, movetoworkspace, 8
+binde = , 9, movetoworkspace, 9
+bind = , escape, submap, reset
+submap = reset
+# ----------------------------------------------------------------
+bind = $mainMod, slash, submap, [ k ]上[ j ]下[ j ]左[ l ]右
+submap = [ k ]上[ j ]下[ j ]左[ l ]右
+binde = , h, layoutmsg, preselect l
+binde = , l, layoutmsg, preselect r
+binde = , k, layoutmsg, preselect u
+binde = , j, layoutmsg, preselect d
+bind = , escape, submap, reset
+submap = reset
+# ----------------------------------------------------------------
+bind = $mainMod, apostrophe, submap, 移动当前窗口至[ x ]笔电[ m ]主屏[ k ]上[ j ]下[ h ]左[ l ]右
+submap = 移动当前窗口至[ x ]笔电[ m ]主屏[ k ]上[ j ]下[ h ]左[ l ]右
+binde = , h, movewindow, l
+binde = , l, movewindow, r
+binde = , k, movewindow, u
+binde = , j, movewindow, d
+binde = , x, movewindow, mon:eDP-1
+binde = , m, movewindow, mon:HDMI-A-1
+bind = , escape, submap, reset
+submap = reset
+# ----------------------------------------------------------------
+bind = $mainMod, semicolon, submap, 调整当前窗口尺寸, [ k ]纵轴上移[ j ]纵轴下移, [ j ]横轴左移[ l ]横轴右移
+submap = 调整当前窗口尺寸, [ k ]纵轴上移[ j ]纵轴下移, [ j ]横轴左移[ l ]横轴右移
+binde = , h, resizeactive, -128 0
+binde = , j, resizeactive, 0 128
+binde = , k, resizeactive, 0 -128
+binde = , l, resizeactive, 128 0
+bind = , escape, submap, reset
+submap = reset
+
+# switcher
+# ----------------------------------------------------------------
+bind = $mainMod, w, submap, [ s ]工作区[ w ]窗口
+submap = [ s ]工作区[ w ]窗口
+bind = , s, exec, workspace-select
+bind = , s, submap, reset
+bind = , w, exec, window-select
+bind = , w, submap, reset
+bind = , escape, submap, reset
+submap = reset
+
+# function
+# 功能
+# 界面
+# ----------------------------------------------------------------
+bind = $mainMod, Tab, submap, 界面：[ l ]布局[ a ]动画[ s ]配色[ w ]壁纸[ p ]面板[ h ]帮助
+submap = 界面：[ l ]布局[ a ]动画[ s ]配色[ w ]壁纸[ p ]面板[ h ]帮助
+bind = , l, submap, 布局：[ m ]主从[ d ]螺旋[ o ]平铺
+submap = 布局：[ m ]主从[ d ]螺旋[ o ]平铺
+bind = , m, exec, hyprctl keyword general:layout master
+bind = , m, submap, reset
+bind = , d, exec, hyprctl keyword general:layout dwindle
+bind = , d, submap, reset
+bind = , o, pseudo,
+bind = , o, submap, reset
+bind = , escape, submap, reset
+submap = 界面：[ l ]布局[ a ]动画[ s ]配色[ w ]壁纸[ p ]面板[ h ]帮助
+bind = , a, exec, anime-select
+bind = , a, submap, reset
+bind = , s, exec, scheme-select
+bind = , s, submap, reset
+bind = , w, exec, swww-select
+bind = , w, submap, reset
+bind = , p, exec, waybar-select
+bind = , p, submap, reset
+bind = , h, exec, helper
+bind = , h, submap, reset
+bind = , escape, submap, reset
+submap = reset
+# 剪贴板
+# ----------------------------------------------------------------
+bind = $mainMod, Insert, submap, 剪贴板：[ s ]选择[ c ]清理
+submap = 剪贴板：[ s ]选择[ c ]清理
+bind = , s, exec, wl-clipboard-select
+bind = , s, submap, reset
+bind = , c, exec, hyprctl dispatch exec -- rm ~/.cache/clipboard.sqlite
+bind = , c, submap, reset
+bind = , escape, submap, reset
+submap = reset
+# 截屏
+# ----------------------------------------------------------------
+bind = $mainMod, Print, submap, 截图：[ s ]全屏[ w ]窗口[ a ]区域[ h ]
+submap = 截图：[ s ]全屏[ w ]窗口[ a ]区域
+bind = , s, submap, 截图：[ m ]主屏[ x ]小新[ b ]Back
+submap = 截图：[ m ]主屏[ x ]小新[ b ]Back
+bind = , m, exec, hyprshot -m output -m HDMI-A-1 -o ~/Picture
+bind = , x, exec, hyprshot -m output -m eDP-1 -o ~/Picture
+bind = , b, submap, 截图：[ s ]全屏[ w ]窗口[ a ]区域
+submap = 截图：[ s ]全屏[ w ]窗口[ a ]区域
+bind = , w, exec, hyprshot -m window -m active -o ~/Picture
+bind = , a, exec, hyprshot -m region -o ~/Picture
+bind = , escape, submap, reset
+submap = reset
+# 屏幕
+# ----------------------------------------------------------------
+bind = $mainMod, m, submap, 小新：[ u ]唤醒[ d ]息屏[ c ]断电[ r ]右横[ v ]右竖[ l ]左横
+submap = 小新：[ u ]唤醒[ d ]息屏[ c ]断电[ r ]右横[ v ]右竖[ l ]左横
+bind = , u, exec, hyprctl dispatch dpms on eDP-1
+bind = , u, submap,reset
+bind = , d, exec, hyprctl dispatch dpms off eDP-1
+bind = , d, submap,reset
+bind = , c, exec, hyprctl keyword monitor eDP-1 disable
+bind = , c, submap,reset
+bind = , r, exec, hyprctl keyword monitor eDP-1,2880x1800@60,2560x0,1
+bind = , v, exec, hyprctl keyword monitor eDP-1,2880x1800@60,2560x0,1,transform,1
+bind = , l, exec, hyprctl keyword monitor eDP-1,2880x1800@60,-2560x0,1
+bind = , escape, submap, reset
+submap = reset
+# 开关
+# ----------------------------------------------------------------
+bind = $mainMod, Delete, submap, [ p ]关机[ r ]重启[ e ]退出
+submap = [ p ]关机[ r ]重启[ e ]退出
+bind = , P, exec, doas shutdown now
+bind = , R, exec, doas reboot
+bind = , E, exit,
+bind = , escape, submap, reset
+submap = reset
+#+end_src
+** kitty
+*** config - [[file:~/.config/kitty/kitty.conf][.config/kitty/kitty.conf]]
+**** include
+#+begin_src conf :tangle ~/.config/kitty/kitty.conf
+include style.conf
+#+end_src
+**** font
+#+begin_src conf :tangle ~/.config/kitty/kitty.conf
+font_family      LXGW WenKai
+bold_font        auto
+italic_font      auto
+bold_italic_font auto
+font_size 14
+
+# Seti-UI + Custom
+symbol_map U+E5FA-U+E6AC Symbols Nerd Font
+
+# Devicons
+symbol_map U+E700-U+E7C5 Symbols Nerd Font
+
+# Font Awesome
+symbol_map U+F000-U+F2E0 Symbols Nerd Font
+
+# Font Awesome Extension
+symbol_map U+E200-U+E2A9 Symbols Nerd Font
+
+# Material Design Icons
+symbol_map U+F0001-U+F1AF0 Symbols Nerd Font
+
+# Weather
+symbol_map U+E300-U+E3E3 Symbols Nerd Font
+
+# Octicons
+symbol_map U+F400-U+F532,U+2665,U+26A1 Symbols Nerd Font
+
+# Powerline Symbols
+symbol_map U+E0A0-U+E0A2,U+E0B0-U+E0B3 Symbols Nerd Font
+
+# Powerline Extra Symbols
+symbol_map U+E0A3,U+E0B4-U+E0C8,U+E0CA,U+E0CC-U+E0D4 Symbols Nerd Font
+
+# IEC Power Symbols
+symbol_map U+23FB-U+23FE,U+2B58 Symbols Nerd Font
+
+# Font Logos
+symbol_map U+F300-U+F32F Symbols Nerd Font
+
+# Pomicons
+symbol_map U+E000-U+E00A Symbols Nerd Font
+
+# Codicons
+symbol_map U+EA60-U+EBEB Symbols Nerd Font
+
+# Additional sets
+symbol_map U+E276C-U+E2771 Symbols Nerd Font # Heavy Angle Brackets
+symbol_map U+2500-U+259F Symbols Nerd Font # Box Drawing
+
+# Some symbols not covered by Symbols Nerd Font
+# nonicons contains icons in the range: U+F101-U+F27D
+# U+F167 is HTML logo, but YouTube logo in Symbols Nerd Font
+symbol_map U+F102,U+F116-U+F118,U+F12F,U+F13E,U+F1AF,U+F1BF,U+F1CF,U+F1FF,U+F20F,U+F21F-U+F220,U+F22E-U+F22F,U+F23F,U+F24F,U+F25F nonicons
+#+end_src
+**** cursor
+#+begin_src conf :tangle ~/.config/kitty/kitty.conf
+cursor_shape block
+#+end_src
+**** clipboard
+#+begin_src conf :tangle ~/.config/kitty/kitty.conf
+map ctrl+y       copy_to_clipboard
+map ctrl+p       paste_from_clipboard
+map Alt+Escape pipe @screen window vi
+#+end_src
+*** color scheme
+**** dark
+#+begin_src conf :tangle ~/.config/kitty/conf.d/dark.conf
+# The basic colors
+foreground              #c6d0f5
+background              #303446
+selection_foreground    #303446
+selection_background    #c6d0f5
+
+background_opacity 1
+background_blur 6
+
+# Cursor colors
+cursor                  #c6d0f5
+cursor_text_color       #303446
+
+# URL underline color when hovering with mouse
+url_color               #303446
+
+# The 16 terminal colors
+
+# black
+color0 #51576d
+color8 #626880
+
+# red
+color1 #e78284
+color9 #e78284
+
+# green
+color2  #a6d189
+color10 #a6d189
+
+# yellow
+color3  #e5c890
+color11 #e5c890
+
+# blue
+color4  #8caaee
+color12 #8caeee
+
+# magenta
+color5  #f4b8e4
+color13 #f4b8e4
+
+# cyan
+color6  #81c8be
+color14 #81c8be
+
+# white
+color7  #b5bfe2
+color15 #a5adce
+#+end_src
+**** light
+#+begin_src conf :tangle ~/.config/kitty/conf.d/light.conf
+# The basic colors
+foreground #303446
+background #c6d0f5
+selection_foreground #c6d0f5
+selection_background #303446
+
+background_opacity 1
+background_blur 6
+
+# Cursor colors
+cursor #303446
+cursor_text_color #c6d0f5
+
+# URL underline color when hovering with mouse
+url_color #303446
+
+# The 16 terminal colors
+
+# black
+color0 #51576d
+color8 #626880
+
+# red
+color1 #B56567
+color9 #e78284
+
+# green
+color2  #7D9E68
+color10 #a6d189
+
+# yellow
+color3  #B39B70
+color11 #e5c890
+
+# blue
+color4  #6e84ba
+color12 #8caaee
+
+# magenta
+color5  #C291B4
+color13 #f4b8e4
+
+# cyan
+color6 #5F948D
+color14 #81c8be
+
+# white
+color7  #b5bfe2
+color15 #a5adce
+#+end_src
+*** session
+**** emacs nox session
+#+begin_src conf
+title emacs-nox
+launch bash -c "emacsclient -t"
+#+end_src
+**** emacs nox session
+#+begin_src conf :tangle ~/.config/kitty/session-emacs.conf
+title emacs-nox
+launch bash -c "emacs -nw"
+#+end_src
+**** btop session
+#+begin_src conf :tangle ~/.config/kitty/session-btop.conf
+title btop
+launch bash -c "btop"
+#+end_src
+**** pulsemixer session
+#+begin_src conf :tangle ~/.config/kitty/session-pulsemixer.conf
+title pulsemixer
+launch bash -c "pulsemixer"
+#+end_src
+**** musicfox session
+#+begin_src conf :tangle ~/.config/kitty/session-musicfox.conf
+title musicfox
+launch bash -c "musicfox"
+#+end_src
+** mako
+*** config - [[file:~/.config/mako/config][.config/mako/config]]
+**** dark - [[file:~/.config/mako/conf.d/light.conf][.config/mako/conf.d/dark.conf]]
+#+begin_src conf :tangle ~/.config/mako/conf.d/dark.conf
+# general
+font=LXGW WenKai 14
+max-history=32
+sort=-time
+default-timeout=5000
+ignore-timeout=1
+format=%a\n%s\n%b
+
+# style
+anchor=top-center
+layer=top
+margin=0,0
+outer-margin=8,0
+width=512
+height=128
+padding=8,8
+border-size=0
+text-alignment=center
+
+# icon
+icons=0
+max-icon-size=32
+icon-location=left
+
+# color
+background-color=#30344680
+border-color=#303446
+text-color=#c6d0f5
+#+end_src
+**** light - [[file:~/.config/mako/conf.d/dark.conf][.config/mako/conf.d/light.conf]]
+#+begin_src conf :tangle ~/.config/mako/conf.d/light.conf
+# general
+font=LXGW WenKai 14
+max-history=32
+sort=-time
+default-timeout=5000
+ignore-timeout=1
+format=%a\n%s\n%b
+
+# style
+anchor=top-center
+layer=top
+margin=0,0
+outer-margin=8,0
+width=512
+height=128
+padding=8,8
+border-size=0
+text-alignment=center
+
+# icon
+icons=0
+max-icon-size=32
+icon-location=left
+
+background-color=#c6d0f580
+border-color=#c6d0f5
+text-color=#303446
+#+end_src
+** mpv
+*** config - [[file:~/.config/mpv/mpv.conf][.config/mpv/mpv.conf]]
+#+begin_src conf :tangle ~/.config/mpv/mpv.conf
+# image
+image-display-duration=inf
+
+# video
+save-position-on-quit=yes
+geometry=66%x66%
+
+# wayland
+vo=gpu
+gpu-api=vulkan
+gpu-context=waylandvk
+vulkan-swap-mode=fifo
+vulkan-async-transfer=yes
+vulkan-async-compute=yes
+#+end_src
+*** key binding - [[file:~/.config/mpv/input.conf][.config/mpv/input.conf]]
+#+begin_src conf :tangle ~/.config/mpv/input.conf
+k add volume 5
+j add volume -5
+m cycle mute
+
+l seek  5
+h seek -5
+c cycle-values loop-file "inf" "no"
+space cycle pause
+
+n playlist-next
+p playlist-prev
+
+f cycle fullscreen
+r cycle_values video-rotate 90 180 270 0
+q quit
+#+end_src
+** npm
+*** config - [[~/.config/npm/npmrc][.config/npm/npmrc]]
+#+begin_src conf
+prefix=~/.local/share/npm
+cache=~/.cache/npm
+#+end_src
+** tofi
+*** config - [[file:~/.config/tofi/config][.config/tofi/config]]
+**** dark - [[file:~/.config/tofi/conf.d/light.conf][.config/tofi/conf.d/dark.conf]]
+#+begin_src conf :tangle ~/.config/tofi/conf.d/dark.conf
+font = "/usr/share/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf"
+font-size = 16
+font-variations = "wght 1200"
+hint-font = false
+
+prompt-text = "擇: "
+scale = true
+anchor = top
+width = 75%
+height = 64
+border-width = 1
+margin-top = 56
+
+horizontal = true
+num-results = 12
+result-spacing = 25
+
+background-color = #303446
+border-color = #303446
+outline-color = #303446
+
+text-color = #c6d0f5
+prompt-color = #c6d0f5
+input-color = #c6d0f5
+default-result-color = #c6d0f5
+selection-color = #303446
+selection-background = #c6d0f5
+selection-background-padding = 4,8
+selection-match-color = #ef9f76
+
+hide-cursor = true
+text-cursor = true
+history = true
+fuzzy-match = false
+terminal = kitty
+#drun-launch = false
+#+end_src
+**** light - [[file:~/.config/tofi/conf.d/dark.conf][.config/tofi/conf.d/light.conf]]
+#+begin_src conf :tangle ~/.config/tofi/conf.d/light.conf
+font = "/usr/share/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf"
+font-size = 16
+font-variations = "wght 1200"
+hint-font = false
+
+prompt-text = "擇: "
+scale = true
+anchor = top
+width = 75%
+height = 64
+border-width = 1
+margin-top = 56
+
+horizontal = true
+num-results = 12
+result-spacing = 25
+
+background-color = #c6d0f5
+border-color = #c6d0f5
+outline-color = #c6d0f5
+
+text-color = #303446
+prompt-color = #303446
+input-color = #303446
+default-result-color = #303446
+selection-color = #c6d0f5
+selection-background = #303446
+selection-background-padding = 4,8
+selection-match-color = #ef9f76
+
+hide-cursor = true
+text-cursor = true
+history = true
+fuzzy-match = false
+terminal = kitty
+#drun-launch = false
+#+end_src
+** waybar
+*** config - [[file:~/.config/waybar/config][.config/waybar/config]]
+**** laptop - [[file:~/.config/waybar/conf.d/laptop.json][.config/waybar/conf.d/laptop.json]]
+#+begin_src conf :tangle ~/.config/waybar/conf.d/laptop.json
+[
+  {
+    "output": "eDP-1",
+    "name": "ltop",
+    "layer": "top",
+    "position": "top",
+    "margin-top": 8,
+    "margin-left": 8,
+    "margin-right": 8,
+    "modules-left": [
+      "network",
+      "cpu",
+      "memory",
+      "battery"
+    ],
+    "modules-center": [
+      "hyprland/window",
+      "hyprland/submap"
+    ],
+    "modules-right": [
+      "wireplumber",
+      "clock",
+      "tray"
+    ],
+    "network": {
+      "interval": 60,
+      "format-wifi": "<span>\udb82\udce8</span>\t聯.【{essid}】",
+      "format-ethernet": "<span>\udb82\udce8</span>\t聯.【{bandwidthTotalBytes}】",
+      "format-disconnected": "無",
+      "tooltip": false
+    },
+    "cpu": {
+      "interval": 60,
+      "format": "核.【{usage}%】",
+      "tooltip": false
+    },
+    "memory": {
+      "interval": 60,
+      "format": "存.【{percentage}%】",
+      "tooltip": false
+    },
+    "battery": {
+      "interval": 30,
+      "format": "電.【{capacity}%】 久.【{time}】",
+      "format-time": "{H}時{M}分",
+      "format-Charging": "C.{capacity}% {timeTo}",
+      "states": {
+        "warning": 20,
+        "critical": 10
+      },
+      "tooltip": false
+    },
+    "hyprland/window": {
+      "format": "<span>\uf268</span>\t【 {class} 】 <span>之</span> 【 {title} 】",
+      "icon-size": 16,
+      "tooltip": false
+    },
+    "hyprland/submap": {
+      "format": "<span>\ue632</span>\t {}",
+      "tooltip": false
+    },
+    "wireplumber": {
+      "interval": 60,
+      "format": "源.【{node_name}】 聲.【{volume}%】",
+      "format-muted": "靜",
+      "max-volume": 150.0,
+      "scroll-step": 5,
+      "tooltip": false
+    },
+    "clock": {
+      "interval": 60,
+      "format": "歷.【{:%H時%M分}】",
+      "timezone": "Asia/Shanghai",
+      "locale": "zh_CN.UTF-8",
+      "tooltip": false
+    },
+    "tray": {
+      "icon-size": 16,
+      "spacing": 8,
+      "tooltip": false
+    }
+  },
+  {
+    "output": "eDP-1",
+    "name": "lbottom",
+    "layer": "top",
+    "position": "bottom",
+    "modules-left": [],
+    "modules-center": [
+      "hyprland/workspaces"
+    ],
+    "modules-right": [],
+    "hyprland/workspaces": {
+      "format": "{icon}",
+      "sort-by-number": true,
+      "active-only": false,
+      "on-scroll-up": "hyprctl dispatch workspace m+1",
+      "on-scroll-down": "hyprctl dispatch workspace m-1",
+      "format-icons": {
+        "1": "臨",
+        "2": "兵",
+        "3": "鬥",
+        "4": "者",
+        "5": "皆",
+        "6": "陣",
+        "7": "列",
+        "8": "前",
+        "9": "行"
+      },
+      "persistent-workspaces": {
+        "1": [
+        ],
+        "2": [
+        ],
+        "3": [
+        ],
+        "4": [
+        ],
+        "5": [
+        ],
+        "6": [
+        ],
+        "7": [
+        ],
+        "8": [
+        ],
+        "9": [
+        ]
+      }
+    }
+  }
+]
+#+end_src
+**** single monitor - [[file:~/.config/waybar/conf.d/single.json][.config/waybar/conf.d/single.json]]
+#+begin_src conf :tangle ~/.config/waybar/conf.d/single.json
+[
+  {
+    "output": "HDMI-A-1",
+    "name": "h1top",
+    "layer": "top",
+    "position": "top",
+    "margin-top": 8,
+    "margin-left": 8,
+    "margin-right": 8,
+    "modules-left": [
+      "network",
+      "cpu",
+      "memory",
+      "battery"
+    ],
+    "modules-center": [
+      "hyprland/window",
+      "hyprland/submap"
+    ],
+    "modules-right": [
+      "wireplumber",
+      "clock",
+      "tray"
+    ],
+    "network": {
+      "interval": 60,
+      "format-wifi": "<span>\udb82\udce8</span>\t聯.【{essid}】",
+      "format-ethernet": "<span>\udb82\udce8</span>\t聯.【{bandwidthTotalBytes}】",
+      "format-disconnected": "無",
+      "tooltip": false
+    },
+    "cpu": {
+      "interval": 60,
+      "format": "核.【{usage}%】",
+      "tooltip": false
+    },
+    "memory": {
+      "interval": 60,
+      "format": "存.【{percentage}%】",
+      "tooltip": false
+    },
+    "battery": {
+      "interval": 60,
+      "format": "電.【{capacity}%】 久.【{time}】",
+      "format-time": "{H}時{M}分",
+      "format-Charging": "C.{capacity}% {timeTo}",
+      "states": {
+        "warning": 19,
+        "critical": 9
+      },
+      "tooltip": false
+    },
+    "hyprland/window": {
+      "format": "<span>\uf268</span>\t【 {class} 】 <span>之</span> 【 {title} 】",
+      "icon-size": 16,
+      "tooltip": false
+    },
+    "hyprland/submap": {
+      "format": "<span>\ue632</span>\t {}",
+      "tooltip": false
+    },
+    "wireplumber": {
+      "interval": 60,
+      "format": "<span>\ue24f</span>\t源.【{node_name}】 聲.【{volume}%】",
+      "format-muted": "靜",
+      "max-volume": 150.0,
+      "scroll-step": 5,
+      "tooltip": false
+    },
+    "clock": {
+      "interval": 60,
+      "format": "歷.【{:%H時%M分}】",
+      "timezone": "Asia/Shanghai",
+      "locale": "zh_CN.UTF-8",
+      "tooltip": false
+    },
+    "tray": {
+      "icon-size": 16,
+      "spacing": 8,
+      "tooltip": false
+    }
+  },
+  {
+    "output": "HDMI-A-1",
+    "name": "h1bottom",
+    "layer": "top",
+    "position": "bottom",
+    "modules-left": [],
+    "modules-center": [
+      "hyprland/workspaces"
+    ],
+    "modules-right": [],
+    "hyprland/workspaces": {
+      "format": "{icon}",
+      "sort-by-number": true,
+      "active-only": false,
+      "on-scroll-up": "hyprctl dispatch workspace m+1",
+      "on-scroll-down": "hyprctl dispatch workspace m-1",
+      "format-icons": {
+        "1": "臨",
+        "2": "兵",
+        "3": "鬥",
+        "4": "者",
+        "5": "皆",
+        "6": "陣",
+        "7": "列",
+        "8": "前",
+        "9": "行"
+      },
+      "persistent-workspaces": {
+        "1": [
+        ],
+        "2": [
+        ],
+        "3": [
+        ],
+        "4": [
+        ],
+        "5": [
+        ],
+        "6": [
+        ],
+        "7": [
+        ],
+        "8": [
+        ],
+        "9": [
+        ]
+      }
+    }
+  }
+]
+#+end_src
+**** dual monitor plus - [[file:~/.config/waybar/conf.d/dual.json][.config/waybar/conf.d/dual.json]]
+#+begin_src conf :tangle ~/.config/waybar/conf.d/dual.json
+[
+  {
+    "output": "HDMI-A-1",
+    "name": "h1top",
+    "layer": "top",
+    "position": "top",
+    "margin-top": 8,
+    "margin-left": 8,
+    "margin-right": 8,
+    "modules-left": [
+      "network",
+      "cpu",
+      "memory",
+      "battery"
+    ],
+    "modules-center": [
+      "hyprland/window",
+      "hyprland/submap"
+    ],
+    "modules-right": [
+      "wireplumber",
+      "clock",
+      "tray"
+    ],
+    "network": {
+      "interval": 60,
+      "format-wifi": "<span>\udb82\udce8</span>\t聯.【{essid}】",
+      "format-ethernet": "<span>\udb82\udce8</span>\t聯.【{bandwidthTotalBytes}】",
+      "format-disconnected": "無",
+      "tooltip": false
+    },
+    "cpu": {
+      "interval": 60,
+      "format": "核.【{usage}%】",
+      "tooltip": false
+    },
+    "memory": {
+      "interval": 60,
+      "format": "存.【{percentage}%】",
+      "tooltip": false
+    },
+    "battery": {
+      "interval": 60,
+      "format": "電.【{capacity}%】 久.【{time}】",
+      "format-time": "{H}時{M}分",
+      "format-Charging": "C.{capacity}% {timeTo}",
+      "states": {
+        "warning": 19,
+        "critical": 9
+      },
+      "tooltip": false
+    },
+    "hyprland/window": {
+      "format": "<span>\uf268</span>\t【 {class} 】 <span>之</span> 【 {title} 】",
+      "icon-size": 16,
+      "tooltip": false
+    },
+    "hyprland/submap": {
+      "format": "<span>\ue632</span>\t {}",
+      "tooltip": false
+    },
+    "wireplumber": {
+      "interval": 60,
+      "format": "<span>\ue24f</span>\t源.【{node_name}】 聲.【{volume}%】",
+      "format-muted": "靜",
+      "max-volume": 150.0,
+      "scroll-step": 5,
+      "tooltip": false
+    },
+    "clock": {
+      "interval": 60,
+      "format": "歷.【{:L%H時%M分}】",
+      "timezone": "Asia/Shanghai",
+      "locale": "zh_CN.UTF-8",
+      "tooltip": false
+    },
+    "tray": {
+      "icon-size": 16,
+      "spacing": 8,
+      "tooltip": false
+    }
+  },
+  {
+    "output": "HDMI-A-1",
+    "name": "h1bottom",
+    "layer": "top",
+    "position": "bottom",
+    "modules-left": [
+    ],
+    "modules-center": [
+      "hyprland/workspaces"
+    ],
+    "modules-right": [],
+    "hyprland/workspaces": {
+      "format": "{icon}",
+      "sort-by-number": true,
+      "active-only": false,
+      "on-scroll-up": "hyprctl dispatch workspace m+1",
+      "on-scroll-down": "hyprctl dispatch workspace m-1",
+      "format-icons": {
+        "1": "臨",
+        "2": "兵",
+        "3": "鬥",
+        "4": "者",
+        "5": "皆",
+        "6": "陣",
+        "7": "列",
+        "8": "前",
+        "9": "行"
+      },
+      "persistent_workspaces": {
+        "1": [
+        ],
+        "2": [
+        ],
+        "3": [
+        ],
+        "4": [
+        ],
+        "5": [
+        ],
+        "6": [
+        ],
+        "7": [
+        ],
+        "8": [
+        ],
+        "9": [
+        ]
+      }
+    }
+  },
+  {
+    "output": "eDP-1",
+    "name": "ltop",
+    "layer": "top",
+    "position": "top",
+    "margin-top": 8,
+    "margin-left": 8,
+    "margin-right": 8,
+    "modules-left": [
+    ],
+    "modules-center": [
+      "hyprland/window",
+      "hyprland/submap"
+    ],
+    "modules-right": [
+      "tray"
+    ],
+    "hyprland/window": {
+      "format": "<span>\uf268</span>\t【 {class} 】 <span>之</span> 【 {title} 】",
+      "icon-size": 16,
+      "tooltip": false
+    },
+    "hyprland/submap": {
+      "format": "<span>\ue632</span>\t {} ",
+      "tooltip": false
+    }
+  }
+]
+#+end_src
+**** triple monitor - [[file:~/.config/waybar/conf.d/triple.json][.config/waybar/conf.d/triple.json]]
+#+begin_src conf :tangle ~/.config/waybar/conf.d/triple.json
+[
+  {
+    "output": "HDMI-A-1",
+    "name": "h1top",
+    "layer": "top",
+    "position": "top",
+    "modules-left": [
+      "network",
+      "cpu",
+      "memory",
+      "battery"
+    ],
+    "modules-center": [
+      "hyprland/window",
+      "hyprland/submap"
+    ],
+    "modules-right": [
+      "wireplumber",
+      "clock",
+      "tray"
+    ],
+    "network": {
+      "interval": 60,
+      "format-wifi": "<span>\udb82\udce8</span>\t聯.【{essid}】",
+      "format-ethernet": "<span>\udb82\udce8</span>\t聯.【{bandwidthTotalBytes}】",
+      "format-disconnected": "無",
+      "tooltip": false
+    },
+    "cpu": {
+      "interval": 60,
+      "format": "核.【{usage}%】",
+      "tooltip": false
+    },
+    "memory": {
+      "interval": 60,
+      "format": "存.【{percentage}%】",
+      "tooltip": false
+    },
+    "battery": {
+      "interval": 60,
+      "format": "電.【{capacity}%】 久.【{time}】",
+      "format-time": "{H}時{M}分",
+      "format-Charging": "C.{capacity}% {timeTo}",
+      "states": {
+        "warning": 19,
+        "critical": 9
+      },
+      "tooltip": false
+    },
+    "hyprland/window": {
+      "format": "<span>\uf268</span>\t【 {class} 】 <span>之</span> 【 {title} 】",
+      "icon-size": 16,
+      "tooltip": false
+    },
+    "hyprland/submap": {
+      "format": "<span>\ue632</span>\t {}",
+      "tooltip": false
+    },
+    "wireplumber": {
+      "interval": 60,
+      "format": "<span>\ue24f</span>\t源.【{node_name}】 聲.【{volume}%】",
+      "format-muted": "靜",
+      "max-volume": 150.0,
+      "scroll-step": 5,
+      "tooltip": false
+    },
+    "clock": {
+      "interval": 60,
+      "format": "歷.【{:%H時%M分}】",
+      "timezone": "Asia/Shanghai",
+      "locale": "zh_CN.UTF-8",
+      "tooltip": false
+    },
+    "tray": {
+      "icon-size": 16,
+      "spacing": 8,
+      "tooltip": false
+    }
+  },
+  {
+    "output": "HDMI-A-1",
+    "name": "h1bottom",
+    "layer": "top",
+    "position": "bottom",
+    "modules-left": [],
+    "modules-center": [
+      "hyprland/workspaces"
+    ],
+    "modules-right": [],
+    "hyprland/workspaces": {
+      "format": "{icon}",
+      "sort-by-number": true,
+      "active-only": false,
+      "on-scroll-up": "hyprctl dispatch workspace m+1",
+      "on-scroll-down": "hyprctl dispatch workspace m-1",
+      "format-icons": {
+        "1": "臨",
+        "2": "兵",
+        "3": "鬥",
+        "4": "者",
+        "5": "皆",
+        "6": "陣",
+        "7": "列",
+        "8": "前",
+        "9": "行"
+      },
+      "persistent-workspaces": {
+        "1": [
+          "HDMI-A-1"
+        ],
+        "2": [
+          "HDMI-A-1"
+        ],
+        "3": [
+          "HDMI-A-1"
+        ],
+        "4": [
+          "HDMI-A-1"
+        ],
+        "5": [
+          "HDMI-A-1"
+        ],
+        "6": [
+          "HDMI-A-1"
+        ],
+        "7": [
+          "HDMI-A-1"
+        ],
+        "8": [
+          "HDMI-A-1"
+        ],
+        "9": [
+          "eDP-1"
+        ]
+      }
+    }
+  }
+]
+#+end_src
+*** color scheme - [[file:~/.config/waybar/style.css][.config/waybar/style.css]]
+**** ref - frappe
+#+begin_src css
+@define-color base   #303446;
+@define-color mantle #292c3c;
+@define-color crust  #232634;
+@define-color text     #c6d0f5;
+@define-color subtext0 #a5adce;
+@define-color subtext1 #b5bfe2;
+@define-color surface0 #414559;
+@define-color surface1 #51576d;
+@define-color surface2 #626880;
+@define-color overlay0 #737994;
+@define-color overlay1 #838ba7;
+@define-color overlay2 #949cbb;
+@define-color blue      #8caaee;
+@define-color lavender  #babbf1;
+@define-color sapphire  #85c1dc;
+@define-color sky       #99d1db;
+@define-color teal      #81c8be;
+@define-color green     #a6d189;
+@define-color yellow    #e5c890;
+@define-color peach     #ef9f76;
+@define-color maroon    #ea999c;
+@define-color red       #e78284;
+@define-color mauve     #ca9ee6;
+@define-color pink      #f4b8e4;
+@define-color flamingo  #eebebe;
+@define-color rosewater #f2d5cf;
+#+end_src
+**** dark - [[file:~/.config/waybar/conf.d/light.css][.config/waybar/conf.d/dark.css]]
+***** general
+#+begin_src css :tangle ~/.config/waybar/conf.d/dark.css
+@define-color black100 rgba(48,52,70,1);
+@define-color black75 rgba(48,52,70,0.75);
+@define-color black50 rgba(48,52,70,0.5);
+@define-color black00 rgba(48,52,70,0);
+@define-color white100  rgba(198,208,245,1);
+@define-color white75  rgba(198,208,245,0.75);
+@define-color white50  rgba(198,208,245,0.5);
+@define-color white00  rgba(198,208,245,0);
+@define-color red100 rgba(231,130,132,100);
+
+@keyframes blink {
+    to {
+        color: @black100;
+        background-color: @white75;
+    }
+}
+
+window#waybar {
+    font-family: LXGW WenKai, Symbols Nerd Font;
+    font-weight: 900;
+    color: @white100;
+}
+
+window.h1top#waybar {
+    background-color: @black75;
+    font-size: 18px;
+}
+window.h1bottom#waybar {
+    background-color: transparent;
+    font-size: 16px;
+}
+window.ltop#waybar {
+    background-color: @black75;
+    font-size: 24px;
+}
+window.lbottom#waybar {
+    background-color: transparent;
+    font-size: 24px;
+}
+#+end_src
+***** top - left
+#+begin_src css :tangle ~/.config/waybar/conf.d/dark.css
+#network {
+    margin-left: 1em;
+}
+
+#cpu {
+    margin-left: 1em;
+}
+
+#memory {
+    margin-left: 1em;
+}
+
+#battery {
+    margin: 0em 1em;
+}
+#battery.warning {
+    color: @red100;
+}
+#battery.critical {
+    animation-name: blink;
+    animation-duration: 1s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+#battery.charging {
+    padding: 0em 1em;
+    box-shadow: 0px 0px 8px 8px @white100;
+}
+#+end_src
+***** top - center
+#+begin_src css :tangle ~/.config/waybar/conf.d/dark.css
+window.HDMI-A-1 #window {
+    margin: 0.5em 1em;
+}
+window.eDP-1 #window {
+    margin: 0.5em 1em;
+}
+window.HDMI-A-1 #submap {
+    margin-left: 1em;
+}
+window.eDP-1 #submap {
+    margin-left: 1em;
+}
+#+end_src
+***** top - right
+#+begin_src css :tangle ~/.config/waybar/conf.d/dark.css
+#wireplumber {
+    margin: 0em 1em;
+}
+#wireplumber.muted {
+    color: @feihong100;
+}
+
+#clock {
+    margin-right: 1em;
+}
+
+#tray {
+    padding: 4px;
+    margin-right: 1em;
+}
+#+end_src
+***** bottom
+#+begin_src css :tangle ~/.config/waybar/conf.d/dark.css
+#workspaces {
+    margin: 0.65em 0.25em 0.25em 0.25em;
+}
+#workspaces button,
+#workspaces button.persistent {
+    color: @white100;
+    background-color: @black75;
+    margin: 0.5em 1em;
+    border-radius: 50%;
+    box-shadow: 0px 0px 8px 8px @white100;
+}
+#workspaces button.active {
+    box-shadow: 0px 0px 8px 8px @white100;
+    animation-name: blink;
+    animation-duration: 3s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+#+end_src
+**** light - [[file:~/.config/waybar/conf.d/dark.css][.config/waybar/conf.d/light.css]]
+***** general
+#+begin_src css :tangle ~/.config/waybar/conf.d/light.css
+@define-color black100 rgba(48,52,70,1);
+@define-color black75 rgba(48,52,70,0.75);
+@define-color black50 rgba(48,52,70,0.5);
+@define-color black00 rgba(48,52,70,0);
+@define-color white100  rgba(198,208,245,1);
+@define-color white75  rgba(198,208,245,0.75);
+@define-color white50  rgba(198,208,245,0.5);
+@define-color white00  rgba(198,208,245,0);
+@define-color red100 rgba(231,130,132,100);
+
+@keyframes blink {
+    to {
+        color: @white100;
+        background-color: @black75;
+    }
+}
+
+window#waybar {
+    font-family: LXGW WenKai, Symbols Nerd Font;
+    font-weight: 900;
+    color: @black100;
+}
+
+window.h1top#waybar {
+    background-color: @white75;
+    font-size: 18px;
+}
+window.h1bottom#waybar {
+    background-color: transparent;
+    font-size: 16px;
+}
+window.ltop#waybar {
+    background-color: @white75;
+    font-size: 24px;
+}
+window.lbottom#waybar {
+    background-color: transparent;
+    font-size: 24px;
+}
+#+end_src
+***** top - left
+#+begin_src css :tangle ~/.config/waybar/conf.d/light.css
+#network {
+    margin-left: 1em;
+}
+
+#cpu {
+    margin-left: 1em;
+}
+
+#memory {
+    margin-left: 1em;
+}
+
+#battery {
+    margin: 0em 1em;
+}
+#battery.warning {
+    color: @red100;
+}
+#battery.critical {
+    animation-name: blink;
+    animation-duration: 1s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+#battery.charging {
+    padding: 0em 1em;
+    box-shadow: 0px 0px 8px 8px @black100;
+}
+#+end_src
+***** top - center
+#+begin_src css :tangle ~/.config/waybar/conf.d/light.css
+window.HDMI-A-1 #window {
+    margin: 0.5em 1em;
+}
+window.eDP-1 #window {
+    margin: 0em 1em;
+}
+window.HDMI-A-1 #submap {
+    color: @black100;
+    font-size: 18px;
+    margin-left: 1em;
+}
+window.eDP-1 #submap {
+    margin-left: 1em;
+}
+#+end_src
+***** top - right
+#+begin_src css :tangle ~/.config/waybar/conf.d/light.css
+#wireplumber {
+    margin: 0em 1em;
+}
+#wireplumber.muted {
+    color: @feihong100;
+}
+
+#clock {
+    margin-right: 1em;
+}
+
+#tray {
+    padding: 4px;
+    margin-right: 1em;
+}
+#+end_src
+***** bottom
+#+begin_src css :tangle ~/.config/waybar/conf.d/light.css
+#workspaces {
+    margin: 0.65em 0.25em 0.25em 0.25em;
+}
+#workspaces button,
+#workspaces button.persistent {
+    color: @black100;
+    background-color: @white75;
+    margin: 0.5em 1em;
+    border-radius: 50%;
+    box-shadow: 0px 0px 8px 8px @black100;
+}
+#workspaces button.active {
+    box-shadow: 0px 0px 8px 8px @black100;
+    animation-name: blink;
+    animation-duration: 3s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+#+end_src
+** xdg
+*** dir - [[file:~/.config/user-dirs.dirs][.config/user-dirs.dirs]]
+#+begin_src conf :tangle ~/.config/user-dirs.dirs
+# XDG_CONFIG_DIRS=/etc/xdg
+# XDG_DATA_DIRS=/usr/share
+# XDG_RUNTIME_DIR=/run/user/$UID
+
+# XDG_CACHE_HOME=$HOME/.cache
+# XDG_CONFIG_HOME=$HOME/.config
+# XDG_DATA_HOME=$HOME/.local/share
+# XDG_STATE_HOME=$HOME/.local/state
+
+# 下载
+XDG_DOWNLOAD_DIR="$HOME/Download"
+# 桌面
+XDG_DESKTOP_DIR="$HOME/Desktop"
+# 公共
+XDG_PUBLICSHARE_DIR="$HOME/Public"
+# 模板
+XDG_TEMPLATES_DIR="$HOME/Template"
+
+# 文档
+XDG_DOCUMENTS_DIR="$HOME/Document"
+# 音乐
+XDG_MUSIC_DIR="$HOME/Music"
+# 图片
+XDG_PICTURES_DIR="$HOME/Picture"
+# 视屏
+XDG_VIDEOS_DIR="$HOME/Video"
+#+end_src
+*** locale - [[file:~/.config/user-dirs.locale][.config/user-dirs.locale]]
+#+begin_src conf :tangle ~/.config/user-dirs.locale
+en_US
+#+end_src
+* data
+** fcitx5
+*** color scheme
+**** dark - [[file:~/.local/share/fcitx5/themes/catppuccin-frappe/theme.conf][.local/share/fcitx5/themes/dark/theme.conf]]
+#+begin_src conf :tangle ~/.local/share/fcitx5/themes/dark/theme.conf
+# vim: ft=dosini
+[Metadata]
+Name=dark
+Description=Modified Catppuccin Frappe (dark)
+ScaleWithDPI=True
+
+[InputPanel]
+# 字体
+Font=LXGW WenKai 12
+# 非选中候选字颜色
+NormalColor=#c6d0f5
+# 选中候选字颜色
+HighlightCandidateColor=#303446
+# 高亮前景颜色(输入字符颜色)
+HighlightColor=#c6d0f5
+# 输入字符背景颜色
+HighlightBackgroundColor=#303446
+Spacing=3
+
+[InputPanel/TextMargin]
+# 候选字对左边距
+Left=4
+# 候选字对右边距
+Right=4
+# 候选字向上边距
+Top=4
+# 候选字向下边距
+Bottom=0
+
+[InputPanel/Background]
+Color=#303446
+BorderColor=#303446
+BorderWidth=0
+
+[InputPanel/Background/Margin]
+Left=4
+Right=4
+Top=4
+Bottom=4
+
+[InputPanel/Highlight]
+Color=#c6d0f5
+
+[InputPanel/Highlight/Margin]
+# 高亮区域左边距
+Left=4
+# 高亮区域右边距
+Right=4
+# 高亮区域上边距
+Top=0
+# 高亮区域下边距
+Bottom=0
+
+[Menu]
+Font=LXGW WenKai 12
+NormalColor=#303446
+Spacing=3
+
+[Menu/Background]
+Color=#303446
+
+[Menu/Background/Margin]
+Left=4
+Right=4
+Top=4
+Bottom=4
+
+[Menu/ContentMargin]
+Left=4
+Right=4
+Top=4
+Bottom=4
+
+[Menu/Highlight]
+Color=#c6d0f5
+
+[Menu/Highlight/Margin]
+Left=8
+Right=8
+Top=4
+Bottom=4
+
+[Menu/Separator]
+#Black2/base
+Color=#c6d0f5
+
+[Menu/TextMargin]
+Left=4
+Right=4
+Top=4
+Bottom=4
+#+end_src
+**** light - [[file:~/.local/share/fcitx5/themes/catppuccin-frappe/theme.conf][.local/share/fcitx5/themes/light/theme.conf]]
+#+begin_src conf :tangle ~/.local/share/fcitx5/themes/light/theme.conf
+# vim: ft=dosini
+[Metadata]
+Name=light
+Description=Modified Catppuccin Frappe (light)
+ScaleWithDPI=True
+
+[InputPanel]
+# 字体
+Font=LXGW WenKai 16
+# 非选中候选字颜色
+NormalColor=#303446
+# 选中候选字颜色
+HighlightCandidateColor=#c6d0f5
+# 高亮前景颜色(输入字符颜色)
+HighlightColor=#303446
+# 输入字符背景颜色
+HighlightBackgroundColor=#c6d0f5
+Spacing=3
+
+[InputPanel/TextMargin]
+# 候选字对左边距
+Left=4
+# 候选字对右边距
+Right=4
+# 候选字向上边距
+Top=4
+# 候选字向下边距
+Bottom=0
+
+[InputPanel/Background]
+Color=#c6d0f575
+BorderColor=#c6d0f5
+BorderWidth=0
+
+[InputPanel/Background/Margin]
+Left=4
+Right=4
+Top=0
+Bottom=0
+
+[InputPanel/Highlight]
+Color=#303446
+
+[InputPanel/Highlight/Margin]
+# 高亮区域左边距
+Left=4
+# 高亮区域右边距
+Right=4
+# 高亮区域上边距
+Top=0
+# 高亮区域下边距
+Bottom=0
+
+[Menu]
+Font=LXGW WenKai 12
+NormalColor=#c6d0f5
+Spacing=3
+
+[Menu/Background]
+Color=#c6d0f5
+
+[Menu/Background/Margin]
+Left=4
+Right=4
+Top=4
+Bottom=4
+
+[Menu/ContentMargin]
+Left=4
+Right=4
+Top=4
+Bottom=4
+
+[Menu/Highlight]
+Color=#303446
+
+[Menu/Highlight/Margin]
+Left=8
+Right=8
+Top=4
+Bottom=4
+
+[Menu/Separator]
+Color=#303446
+
+[Menu/TextMargin]
+Left=4
+Right=4
+Top=4
+Bottom=4
+#+end_src
+*** rime - [[file:~/.local/share/fcitx5/rime/default.custom.yaml][.local/share/fcitx5/rime/default.custom.yaml]]
+#+begin_src conf :tangle ~/.local/share/fcitx5/rime/default.custom.yaml
+patch:
+  schema_list:
+    - schema: luna_pinyin_simp
+#+end_src
+** browser extension
+*** vimium c - [[file:~/.local/back_restore/vimium_c.json][.local/back_restore/vimium_c.json]]
+#+begin_src conf :tangle ~/.local/back_restore/vimium_c.json
+{
+"name": "Vimium C",
+"@time": "2023/11/13 13:59:34",
+"time": 1699855174356,
+"environment": {
+"extension": "1.99.994",
+"platform": "linux",
+"chromium": 118
+},
+"allBrowserUrls": true,
+"exclusionRules": [],
+"keyLayout": 2,
+"searchEngines": [
+"",
+"gh: https://github.com/search?q=$s \\",
+"  blank=https://github.com/ GitHub 仓库",
+" gl: https://gitlab.com/search?search=%s \\",
+"  blank=https://gitlab.com/ Gitlab 仓库",
+"",
+"melpa: https://melpa.org/#/?q=%s \\",
+"  blank=https://melpa.org/ Emacs Melpa",
+"",
+"wg: https://wiki.gentoo.org/index.php?title=Special:Search&search=%s \\",
+"  blank=https://wiki.gentoo.org/ Gentoo Wiki",
+"pg: https://gpo.zugaina.org/Search?search=%s \\",
+"  blank=https://gpo.zugaina.org/ Gentoo Overlay",
+"",
+"wa: https://wiki.archlinux.org/index.php?title=Special:Search&search=%s \\",
+"  blank=https://wiki.archlinux.org/ Archlinux wiki",
+"aur: https://aur.archlinux.org/packages?O=0&K=%s \\",
+"  blank=https://aur.archlinux.org/ Archlinux aur",
+"pn: https://search.nixos.org/packages?query=%s \\",
+"  blank=https://search.nixos.org/ Nix Package",
+"",
+"gg: https://www.google.com/search?q=%s\\",
+"  www.google.com re=/^(?:\\.[a-z]{2,4})?\\/search\\b.*?[#&?]q=([^#&]*)/i\\",
+"  blank=https://www.google.com/ Google",
+"bb: https://www.bing.com/search?q=$s \\",
+"  blank=https://cn.bing.com/ 必应",
+"bbc: https://cn.bing.com/search?q=%s \\",
+"  blank=https://cn.bing.com/ 必应",
+"bd: https://www.baidu.com/s?ie=utf-8&wd=%s \\",
+"  blank=https://www.baidu.com/ 百度",
+"",
+"zh: https://zhihu.com/search?type=content&q=%s \\",
+"  blank=https://zhihu.com/ 知乎",
+"",
+"blbl: https://search.bilibili.com/all?keyword=%s \\",
+"  blank=https://www.bilibili.com/ 哔哩哔哩",
+"yt: https://www.youtube.com/results?search_query=%s \\",
+"  blank=https://www.youtube.com/ YouTube",
+"",
+"mb: https://api.map.baidu.com/geocoder?output=html&address=%s&src=vimium-c\\",
+"  blank=https://map.baidu.com/",
+"mg: https://www.gaode.com/search?query=%s \\",
+"  blank=https://www.gaode.com",
+"mgg: https://www.google.com/maps?q=%s \\",
+"  blank=https://www.google.com/maps 谷歌地图",
+"",
+"tb: https://s.taobao.com/search?ie=utf8&q=%s \\",
+"  blank=https://www.taobao.com/ 淘宝",
+"jd: https://search.jd.com/Search?enc=utf-8&keyword=%s \\",
+"  blank=https://jd.com/ 京东",
+""
+],
+"searchUrl": "https://cn.bing.com/search?q=$s 必应中国",
+"vimSync": true
+}
+#+end_src

@@ -1,0 +1,3 @@
+#+title: 05 Emacs
+#+startup: show2levels
+#+properties: header-args :mkdirp yes

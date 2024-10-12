@@ -1,0 +1,181 @@
+#+title: Kernel Configuration of Lenovo83AL ( XiaoXin Pro 14 IRH8 )
+#+startup: show2levels
+
+* general
+** main
+*** version
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_LOCALVERSION="-failsafe"
+#+end_src
+#+begin_src conf
+CONFIG_LOCALVERSION="-test"
+#+end_src
+*** hostname - failsafe
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_DEFAULT_HOSTNAME=""
+#+end_src
+*** initramfs - failsafe
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_RD_GZIP is not set
+# CONFIG_RD_BZIP2 is not set
+# CONFIG_RD_LZMA is not set
+# CONFIG_RD_XZ is not set
+# CONFIG_RD_LZO is not set
+# CONFIG_RD_LZ4 is not set
+CONFIG_LZ4_DECOMPRESS=m
+#+end_src
+*** general - failsafe
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_CPU_ISOLATION is not set
+# CONFIG_IKHEADERS is not set
+# CONFIG_PRINTK_INDEX is not set
+# CONFIG_CHECKPOINT_RESTORE is not set
+# CONFIG_SCHED_AUTOGROUP is not set
+# CONFIG_BOOT_CONFIG is not set
+# CONFIG_PROFILING is not set
+#+end_src
+** sub
+*** kernel compress - failsafe
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_KERNEL_GZIP is not set
+CONFIG_KERNEL_ZSTD=y
+#+end_src
+*** bpf - failsafe
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_BPF_PRELOAD is not set
+#+end_src
+*** timer - failsafe
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_NO_HZ_IDLE=y
+# CONFIG_NO_HZ_FULL is not set
+#+end_src
+*** preemption
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_PREEMPT_VOLUNTARY_BUILD=y
+# CONFIG_PREEMPT_DYNAMIC is not set
+#+end_src
+*** accounting
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_TICK_CPU_ACCOUNTING=y
+# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set
+# CONFIG_IRQ_TIME_ACCOUNTING is not set
+# CONFIG_TASKSTATS is not set
+#+end_src
+* processor type & features
+** main
+*** hypervisor
+disable vm guest
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_HYPERVISOR_GUEST is not set
+#+end_src
+*** general
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_PGTABLE_LEVELS=4
+# CONFIG_X86_MPPARSE is not set
+# CONFIG_X86_CPU_RESCTRL is not set
+# CONFIG_X86_EXTENDED_PLATFORM is not set
+# CONFIG_X86_INTEL_LPSS is not set
+# CONFIG_X86_AMD_PLATFORM_DEVICE is not set
+# CONFIG_MAXSMP is not set
+CONFIG_NR_CPUS_RANGE_BEGIN=2
+CONFIG_NR_CPUS_RANGE_END=512
+CONFIG_NR_CPUS_DEFAULT=64
+CONFIG_NR_CPUS=64
+# CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS is not set
+# CONFIG_X86_MCE_INJECT is not set
+# CONFIG_X86_16BIT is not set
+# CONFIG_X86_VSYSCALL_EMULATION is not set
+# CONFIG_X86_5LEVEL is not set
+# CONFIG_X86_CPA_STATISTICS is not set
+# CONFIG_AMD_NUMA is not set
+CONFIG_NODES_SHIFT=6
+# CONFIG_X86_PMEM_LEGACY is not set
+# CONFIG_X86_CHECK_BIOS_CORRUPTION is not set
+# CONFIG_X86_KERNEL_IBT is not set
+# CONFIG_X86_SGX is not set
+# CONFIG_EFI_HANDOVER_PROTOCOL is not set
+# CONFIG_EFI_MIXED is not set
+# CONFIG_EFI_RUNTIME_MAP is not set
+# CONFIG_KEXEC is not set
+# CONFIG_KEXEC_FILE is not set
+# CONFIG_CRASH_DUMP is not set
+# CONFIG_LEGACY_VSYSCALL_XONLY is not set
+CONFIG_LEGACY_VSYSCALL_NONE=y
+CONFIG_ARCH_SUPPORTS_KMAP_LOCAL_FORCE_MAP=y
+# CONFIG_DEBUG_KMAP_LOCAL_FORCE_MAP is not set
+#+end_src
+** sub
+*** processor family
+enable core2/newer
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_MCORE2=y
+# CONFIG_GENERIC_CPU is not set
+CONFIG_X86_INTEL_USERCOPY=y
+CONFIG_X86_USE_PPRO_CHECKSUM=y
+CONFIG_X86_P6_NOP=y
+#+end_src
+*** processor vendor
+enable intel process ONLY
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+CONFIG_PROCESSOR_SELECT=y
+# CONFIG_CPU_SUP_AMD is not set
+# CONFIG_CPU_SUP_HYGON is not set
+# CONFIG_CPU_SUP_CENTAUR is not set
+# CONFIG_CPU_SUP_ZHAOXIN is not set
+#+end_src
+* binary emulations
+disable depreciated x32_abi
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_X86_X32_ABI is not set
+#+end_src
+* enable the block layer
+** main
+*** general
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_BLOCK_LEGACY_AUTOLOAD is not set
+# CONFIG_BLK_DEV_ZONED is not set
+# CONFIG_BLK_DEV_THROTTLING is not set
+# CONFIG_BLK_CGROUP_IOLATENCY is not set
+# CONFIG_BLK_CGROUP_FC_APPID is not set
+# CONFIG_BLK_CGROUP_IOCOST is not set
+# CONFIG_BLK_CGROUP_IOPRIO is not set
+# CONFIG_BLK_DEBUG_FS is not set
+# CONFIG_BLK_SED_OPAL is not set
+# CONFIG_BLK_INLINE_ENCRYPTION is not set
+#+end_src
+** sub
+*** partition type
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_AIX_PARTITION is not set
+# CONFIG_OSF_PARTITION is not set
+# CONFIG_MAC_PARTITION is not set
+# CONFIG_BSD_DISKLABEL is not set
+# CONFIG_MINIX_SUBPARTITION is not set
+# CONFIG_SOLARIS_X86_PARTITION is not set
+# CONFIG_UNIXWARE_DISKLABEL is not set
+# CONFIG_SGI_PARTITION is not set
+# CONFIG_SUN_PARTITION is not set
+#+end_src
+*** io schedule
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_MQ_IOSCHED_KYBER is not set
+# CONFIG_MQ_IOSCHED_DEADLINE is not set
+# CONFIG_BFQ_GROUP_IOSCHED is not set
+#+end_src
+* kernel hacking
+** sub
+*** testing & coverage
+disable extra testing
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_KUNIT is not set
+# CONFIG_RUNTIME_TESTING_MENU is not set
+# CONFIG_MEMTEST is not set
+#+end_src
+* gentoo linux
+** sub
+*** init system
+enable systemd
+#+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
+# CONFIG_GENTOO_LINUX_INIT_SCRIPT is not set
+CONFIG_GENTOO_LINUX_INIT_SYSTEMD=y
+#+end_src

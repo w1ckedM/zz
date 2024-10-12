@@ -1,0 +1,158 @@
+#+title: System Configuration of Lenovo83AL ( XiaoXin Pro 14 IRH8 )
+#+startup: show2levels
+#+properties: header-args :mkdirp yes
+
+* default configuration
+** bashrc for root
+#+begin_src bash :tangle "/doas::/root/.bashrc" :shebang #!/usr/bin/env bash
+if [[ $- != *i* ]]; then
+    return
+fi
+
+set -o vi
+set -o noclobber
+
+export PATH=$PATH:/usr/local/bin:
+#+end_src
+** dracut - [[file:/etc/dracut.conf][dracut.conf]]
+#+begin_src conf :tangle "/doas::/etc/dracut.conf"
+hostonly="yes"
+compress="zstd"
+#+end_src
+** fs layout - [[file:/etc/fstab][fstab]]
+#+begin_src conf :tangle "/doas::/etc/fstab"
+# /dev/nvme0n1p2
+LABEL=LXS   /   btrfs   rw,noatime,compress=zstd:3,ssd,space_cache=v2,autodefrag,subvolid=256,subvol=/@ 0 0
+# /dev/nvme0n1p1
+LABEL=EFI   /boot/efi   vfat    defaults    0 2
+# /dev/nvme0n1p2
+LABEL=LXS   /home   btrfs   rw,noatime,compress=zstd:3,ssd,space_cache=v2,autodefrag,subvolid=257,subvol=/@home 0 0
+# /dev/nvme0n1p2
+LABEL=LXS   /tmp    btrfs   rw,noatime,compress=zstd:3,ssd,space_cache=v2,autodefrag,subvolid=258,subvol=/@tmp  0 0
+# /dev/nvme0n1p2
+LABEL=LXS   /var    btrfs   rw,noatime,compress=zstd:3,ssd,space_cache=v2,autodefrag,subvolid=259,subvol=/@var  0 0
+# /var/tmp/portage
+tmpfs  /var/tmp/portage    tmpfs   size=8G
+#+end_src
+** hostname - [[file:/etc/hostname][hostname]]
+#+begin_src conf :tangle "/doas::/etc/hostname"
+83AL
+#+end_src
+** locale - [[file:/etc/locale.gen][locale.gen]]
+#+begin_src conf :tangle "/doas::/etc/locale.gen"
+en_US.UTF-8 UTF-8
+zh_CN.UTF-8 UTF-8
+#+end_src
+** console - [[file:/etc/vconsole.conf][vconsole.conf]]
+#+begin_src conf :tangle "/doas::/etc/vconsole.conf"
+KEYMAP=us
+#+end_src
+** bluetooth - [[file:/etc/bluetooth/main.conf][bluetooth/main.conf]]
+#+begin_src conf :tangle "/doas::/etc/bluetooth/main.conf"
+[General]
+AlwaysPairable = false
+Experimental = true
+
+[Policy]
+AutoEnable=true
+#+end_src
+* systemd service
+** auto login - [[file:/etc/systemd/system/getty@tty1.service.d/autologin.conf][systemd/system/getty@tty1.service.d/autologin.conf]]
+#+begin_src conf :tangle "/doas::/etc/systemd/system/getty@tty1.service.d/autologin.conf"
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --skip-login --nonewline --autologin wimi --noclear %I $TERM
+#+end_src
+** network ethernet - [[file:/etc/systemd/network/20wired.network][systemd/network/20wired.network]]
+#+begin_src conf :tangle "/doas::/etc/systemd/network/20wired.network"
+[Match]
+Name=enp0s20f0u7u1
+
+[Network]
+DHCP=yes
+
+[DHCPv4]
+RouteMetric=10
+#+end_src
+** wireless daemon - [[file:/etc/iwd/main.conf][iwd/main.conf]]
+  #+begin_src conf :tangle "/doas::/etc/iwd/main.conf"
+[Network]
+EnableIPv6=false
+NameResolvingService=systemd
+  #+end_src
+** network wireless - [[file:/etc/systemd/network/30wireless.network][systemd/network/30wireless.network]]
+#+begin_src conf :tangle "/doas::/etc/systemd/network/30wireless.network"
+[Match]
+Name=wlan0
+
+[Network]
+DHCP=yes
+
+[DHCPv4]
+RouteMetric=20
+#+end_src
+** time sync - [[file:/etc/systemd/timesyncd.conf][systemd/timesyncd.conf]]
+#+begin_src conf :tangle "/doas::/etc/systemd/timesyncd.conf"
+[Time]
+NTP=cn.ntp.org.cn ntp1.nim.ac.cn
+FallbackNTP=0.gentoo.pool.ntp.org 1.gentoo.pool.ntp.org 2.gentoo.pool.ntp.org 3.gentoo.pool.ntp.org
+#+end_src
+* administration
+** doas - [[file:/etc/doas.conf][doas.conf]]
+#+begin_src conf :tangle "/doas::/etc/doas.conf"
+permit nopass keepenv :wheel
+# !!!
+#+end_src
+** keyd - [[file:/etc/keyd/default.conf][keyd/default.conf]]
+#+begin_src conf :tangle "/doas::/etc/keyd/default.conf"
+[ids]
+
+,*
+
+[main]
+
+# CapsLk/Return:
+#   act as Esc/Return when tapped
+#   act as Ctrl when held
+capslock = overload(control, esc)
+enter = overload(control, enter)
+
+# Esc:
+#   remap to Caps
+esc = capslock
+
+# Space:
+#   act as Space when tapped
+#   act as Meta when held
+space = overload(meta,space)
+
+# Shift/Meta/Ctrl/Alt:
+#   no need to hold
+shift = oneshot(shift)
+meta = oneshot(meta)
+control = oneshot(control)
+alt = oneshot(alt)
+rightalt = oneshot(altgr)
+
+f+j = pagedown
+g+h = pageup
+
+#+end_src
+** policykit - [[file:/etc/polkit-1/rules.d/10-admin.rules][10-admin.rules]]
+#+begin_src conf :tangle "/doas::/etc/polkit-1/rules.d/10-admin.rules"
+polkit.addAdminRule(function(action, subject) {
+    return ["unix-group:wheel"];
+});
+#+end_src
+** proxychains - [[file:/etc/proxychains.conf][proxychains.conf]]
+#+begin_src conf
+strict_chain
+quiet_mode
+proxy_dns
+remote_dns_subnet 224
+tcp_read_time_out 15000
+tcp_connect_time_out 8000
+
+[ProxyList]
+http    192.168.31.81   2013
+#+end_src

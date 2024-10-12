@@ -1,0 +1,756 @@
+#+title: Local Script
+#+startup: show2levels
+#+properties: header-args :mkdirp yes
+
+* Hyprland
+** hyprland
+*** xdg desktop portal - [[file:~/.local/bin/xdg-desktop-portal][xdg-desktop-portal]]
+#+begin_src bash :tangle ~/.local/bin/xdg-desktop-portal :shebang #!/usr/bin/env bash
+
+sleep 1
+killall -e xdg-desktop-portal-hyprland
+killall -e xdg-desktop-portal-wlr
+killall xdg-desktop-portal
+/usr/libexec/xdg-desktop-portal-hyprland &
+sleep 2
+/usr/libexec/xdg-desktop-portal &
+
+#+end_src
+*** init - [[file:~/.local/bin/hypr][hypr]]
+#+begin_src bash :tangle ~/.local/bin/hypr :shebang #!/usr/bin/env bash
+
+_laptop() {
+    ln -sf ~/.config/waybar/conf.d/laptop.json ~/.config/waybar/config &&
+        ln -sf ~/.config/hypr/conf.d/22-output-laptop.conf ~/.config/hypr/conf.d/02-output.conf &&
+        ln -sf ~/.config/hypr/conf.d/44-rule-laptop.conf ~/.config/hypr/conf.d/04-rule.conf
+}
+
+_single() {
+	ln -sf ~/.config/waybar/conf.d/single.json ~/.config/waybar/config &&
+        ln -sf ~/.config/hypr/conf.d/22-output-single.conf ~/.config/hypr/conf.d/02-output.conf &&
+        ln -sf ~/.config/hypr/conf.d/44-rule-single.conf ~/.config/hypr/conf.d/04-rule.conf
+}
+
+_dual() {
+	ln -sf ~/.config/waybar/conf.d/dual.json ~/.config/waybar/config &&
+        ln -sf ~/.config/hypr/conf.d/22-output-dual.conf ~/.config/hypr/conf.d/02-output.conf &&
+        ln -sf ~/.config/hypr/conf.d/44-rule-dual.conf ~/.config/hypr/conf.d/04-rule.conf
+}
+
+_triple() {
+	ln -sf ~/.config/waybar/conf.d/triple.json ~/.config/waybar/config &&
+        ln -sf ~/.config/hypr/conf.d/22-output-triple.conf ~/.config/hypr/conf.d/02-output.conf &&
+        ln -sf ~/.config/hypr/conf.d/44-rule-triple.conf ~/.config/hypr/conf.d/04-rule.conf
+}
+
+_help() {
+	echo ""
+	echo "Usage:"
+	echo ""
+	echo "-l |  laptop profile"
+	echo "      [eDP-1] top bar - status"
+	echo "      [eDP-1] left bar - workspace"
+	echo ""
+	echo "-s |  single monitor profile"
+	echo "      [HDMI-A-1] top bar - status"
+	echo "      [HDMI-A-1] left bar - workspaces"
+	echo ""
+	echo "-d |  dual monitor profile"
+	echo "      [HDMI-A-1] top bar - status"
+	echo "      [HDMI-A-1] left bar - workspaces"
+	echo "      [eDP-1] top bar - windows & submap"
+	echo ""
+	echo "-t |  triple monitor profile"
+	echo "      [HDMI-A-1] top bar - status"
+	echo "      [HDMI-A-1] left bar - workspaces"
+	echo "      [eDP-1] top bar - windows & submap"
+	echo ""
+	echo "-h |  usage"
+	echo ""
+	exit
+}
+
+while getopts "ldsth" _flag; do
+	case ${_flag} in
+	l)
+		_laptop
+		;;
+	d)
+		_dual
+		;;
+	s)
+		_single
+		;;
+	t)
+		_triple
+		;;
+	h)
+		_help
+		;;
+	,*)
+		_help
+		;;
+	esac
+done
+
+dbus-run-session Hyprland
+
+#+end_src
+*** workspace select - [[file:~/.local/bin/workspace-select][workspace-select]]
+#+begin_src bash :shebang #!/usr/bin/env bash :tangle ~/.local/bin/workspace-select
+
+_selection=$(hyprctl workspaces -j | \
+    jq -r '.[] | .name, .lastwindowtitle' | \
+    awk '{printf "%s >>> ", $0; getline; printf "%s \n", $0}' | \
+    sort | \
+    tofi --prompt-text="Workspaces「工作区」: ")
+[ -z "${_selection}" ] && exit
+
+_workspace=$(echo "${_selection}" | awk '{print $1}')
+hyprctl dispatch workspace "${_workspace}"
+
+#+end_src
+*** window select - [[file:~/.local/bin/window-select][window-select]]
+#+begin_src bash :tangle ~/.local/bin/window-select :shebang #!/usr/bin/env bash
+
+_selection=$(hyprctl clients -j | \
+    jq -r '.[] | .workspace.id, .class, .title, .address' | \
+    awk '{printf "(%s) <=> ", $0; getline; printf "%s ", $0; getline; printf "[%s] ", $0; getline; printf " (%s)\n", $0}' | \
+    sort | \
+    tofi --prompt-text="Windows「窗口」: ")
+[ -z "${_selection}" ] && exit
+
+_address=$(echo "${_selection}" | grep -E -o '\(0x.*\)' | sed 's/[()]//g')
+hyprctl dispatch focuswindow address:"${_address}"
+
+#+end_src
+*** screenshot - [[file:~/.local/bin/hyprshot][hyprshot]]
+#+begin_src bash :tangle ~/.local/bin/hyprshot :shebang #!/usr/bin/env bash
+
+set -e
+
+function Help() {
+    cat <<EOF
+Usage: hyprshot [options ..] [-m [mode] ..] -- [command]
+
+Hyprshot is an utility to easily take screenshot in Hyprland using your mouse.
+
+It allows taking screenshots of windows, regions and monitors which are saved to a folder of your choosing and copied to your clipboard.
+
+Examples:
+  capture a window                      \`hyprshot -m window\`
+  capture active window to clipboard    \`hyprshot -m window -m active --clipboard-only\`
+  capture selected monitor              \`hyprshot -m output -m DP-1\`
+
+Options:
+  -h, --help                show help message
+  -m, --mode                one of: output, window, region, active, OUTPUT_NAME
+  -o, --output-folder       directory in which to save screenshot
+  -f, --filename            the file name of the resulting screenshot
+  -d, --debug               print debug information
+  -s, --silent              don't send notification when screenshot is saved
+  -r, --raw                 output raw image data to stdout
+  -t, --notif-timeout       notification timeout in milliseconds (default 5000)
+  --clipboard-only          copy screenshot to clipboard and don't save image in disk
+  -- [command]              open screenshot with a command of your choosing. e.g. hyprshot -m window -- mirage
+
+Modes:
+  output        take screenshot of an entire monitor
+  window        take screenshot of an open window
+  region        take screenshot of selected region
+  active        take screenshot of active window|output
+                (you must use --mode again with the intended selection)
+  OUTPUT_NAME   take screenshot of output with OUTPUT_NAME
+                (you must use --mode again with the intended selection)
+                (you can get this from \`hyprctl monitors\`)
+EOF
+}
+
+function Print() {
+    if [ $DEBUG -eq 0 ]; then
+        return 0
+    fi
+
+    1>&2 printf "$@"
+}
+
+function send_notification() {
+    if [ $SILENT -eq 1 ]; then
+        return 0
+    fi
+
+    local message=$([ $CLIPBOARD -eq 1 ] && \
+        echo "Image copied to the clipboard" || \
+        echo "Image saved in <i>${1}</i> and copied to the clipboard.")
+    notify-send "Screenshot saved" \
+                "${message}" \
+                -t "$NOTIF_TIMEOUT" -i "${1}" -a Hyprshot
+}
+
+function trim() {
+    local geometry="${1}"
+    local xy_str=$(echo "${geometry}" | cut -d' ' -f1)
+    local wh_str=$(echo "${geometry}" | cut -d' ' -f2)
+    local x=`echo "${xy_str}" | cut -d',' -f1`
+    local y=`echo "${xy_str}" | cut -d',' -f2`
+    local width=`echo "${wh_str}" | cut -dx -f1`
+    local height=`echo "${wh_str}" | cut -dx -f2`
+
+    local max_width=`hyprctl monitors -j | jq -r '[.[] | (.x + .width)] | max'`
+    local max_height=`hyprctl monitors -j | jq -r '[.[] | (.y + .height)] | max'`
+
+    local cropped_x=$x
+    local cropped_y=$y
+    local cropped_width=$width
+    local cropped_height=$height
+
+    if ((x + width > max_width)); then
+        cropped_width=$((max_width - x))
+    fi
+    if ((y + height > max_height)); then
+        cropped_height=$((max_height - y))
+    fi
+
+    if ((x < 0)); then
+        cropped_x=0
+        cropped_width=$((cropped_width + x))
+    fi
+    if ((y < 0)); then
+        cropped_y=0
+        cropped_height=$((cropped_height + y))
+    fi
+
+    printf "%s,%s %sx%s\n" \
+        "${cropped_x}" "${cropped_y}" \
+        "${cropped_width}" "${cropped_height}"
+}
+
+function save_geometry() {
+    Print "Geometry: %s\n" "${1}"
+    local cropped_geometry=`trim "${1}"`
+    Print "Crop: %s\n" "${cropped_geometry}"
+    local output=""
+
+    if [ $RAW -eq 1 ]; then
+        grim -g "${cropped_geometry}" -
+        return 0
+    fi
+
+    if [ $CLIPBOARD -eq 0 ]; then
+        mkdir -p "$SAVEDIR"
+        grim -g "${cropped_geometry}" "$SAVE_FULLPATH"
+        output="$SAVE_FULLPATH"
+        wl-copy < "$output"
+        [ -z "$COMMAND" ] || {
+            "$COMMAND" "$output"
+        }
+    else
+        wl-copy < <(grim -g "${cropped_geometry}" -)
+    fi
+
+    send_notification $output
+}
+
+function begin_grab() {
+    local option=$1
+    case $option in
+        output)
+            if [ $CURRENT -eq 1 ]; then
+                local geometry=`grab_active_output`
+            elif [ -z $SELECTED_MONITOR ]; then
+                local geometry=`grab_output`
+            else
+                local geometry=`grab_selected_output $SELECTED_MONITOR`
+            fi
+            ;;
+        region)
+            local geometry=`grab_region`
+            ;;
+        window)
+            if [ $CURRENT -eq 1 ]; then
+                local geometry=`grab_active_window`
+            else
+                local geometry=`grab_window`
+            fi
+            ;;
+    esac
+    save_geometry "${geometry}"
+}
+
+function grab_output() {
+    slurp -or
+}
+
+function grab_active_output() {
+    local active_workspace=`hyprctl -j activeworkspace`
+    local monitors=`hyprctl -j monitors`
+    Print "Monitors: %s\n" "$monitors"
+    Print "Active workspace: %s\n" "$active_workspace"
+    local current_monitor="$(echo $monitors | jq -r 'first(.[] | select(.activeWorkspace.id == '$(echo $active_workspace | jq -r '.id')'))')"
+    Print "Current output: %s\n" "$current_monitor"
+    echo $current_monitor | jq -r '"\(.x),\(.y) \(.width/.scale|round)x\(.height/.scale|round)"'
+}
+
+function grab_selected_output() {
+    local monitor=`hyprctl -j monitors | jq -r '.[] | select(.name == "'$(echo $1)'")'`
+    Print "Capturing: %s\n" "${1}"
+    echo $monitor | jq -r '"\(.x),\(.y) \(.width/.scale|round)x\(.height/.scale|round)"'
+}
+
+function grab_region() {
+    slurp -d
+}
+
+function grab_window() {
+    local monitors=`hyprctl -j monitors`
+    local clients=`hyprctl -j clients | jq -r '[.[] | select(.workspace.id | contains('$(echo $monitors | jq -r 'map(.activeWorkspace.id) | join(",")')'))]'`
+    Print "Monitors: %s\n" "$monitors"
+    Print "Clients: %s\n" "$clients"
+    # Generate boxes for each visible window and send that to slurp
+    # through stdin
+    local boxes="$(echo $clients | jq -r '.[] | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1]) \(.title)"')"
+    Print "Boxes:\n%s\n" "$boxes"
+    slurp -r <<< "$boxes"
+}
+
+function grab_active_window() {
+    local active_window=`hyprctl -j activewindow`
+    local box=$(echo $active_window | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+    Print "Box:\n%s\n" "$box"
+    echo "$box"
+}
+
+function parse_mode() {
+    local mode="${1}"
+
+    case $mode in
+        window | region | output)
+            OPTION=$mode
+            ;;
+        active)
+            CURRENT=1
+            ;;
+        *)
+            hyprctl monitors -j | jq -re '.[] | select(.name == "'$(echo $mode)'")' &>/dev/null
+            SELECTED_MONITOR=$mode
+            ;;
+    esac
+}
+
+function args() {
+    local options=$(getopt -o hf:o:m:dsrt: --long help,filename:,output-folder:,mode:,clipboard-only,debug,silent,raw,notif-timeout: -- "$@")
+    eval set -- "$options"
+
+    while true; do
+        case "$1" in
+            -h | --help)
+                Help
+                exit
+                ;;
+            -o | --output-folder)
+                shift;
+                SAVEDIR=$1
+                ;;
+            -f | --filename)
+                shift;
+                FILENAME=$1
+                ;;
+            -m | --mode)
+                shift;
+                parse_mode $1
+                ;;
+            --clipboard-only)
+                CLIPBOARD=1
+                ;;
+            -d | --debug)
+                DEBUG=1
+                ;;
+            -s | --silent)
+                SILENT=1
+                ;;
+            -r | --raw)
+                RAW=1
+                ;;
+            -t | --notif-timeout)
+                shift;
+                NOTIF_TIMEOUT=$1
+                ;;
+            --)
+                shift # Skip -- argument
+                COMMAND=${@:2}
+                break;;
+        esac
+        shift
+    done
+
+    if [ -z $OPTION ]; then
+        Print "A mode is required\n\nAvailable modes are:\n\toutput\n\tregion\n\twindow\n"
+        exit 2
+    fi
+}
+
+if [ -z $1 ]; then
+    Help
+    exit
+fi
+
+CLIPBOARD=0
+DEBUG=0
+SILENT=0
+RAW=0
+NOTIF_TIMEOUT=5000
+CURRENT=0
+[ -z "$XDG_PICTURES_DIR" ] && type xdg-user-dir &> /dev/null && XDG_PICTURES_DIR=$(xdg-user-dir PICTURES)
+FILENAME="$(date +'%Y-%m-%d-%H%M%S_hyprshot.png')"
+[ -z "$HYPRSHOT_DIR" ] && SAVEDIR=${XDG_PICTURES_DIR:=~} || SAVEDIR=${HYPRSHOT_DIR}
+
+args $0 "$@"
+
+SAVE_FULLPATH="$SAVEDIR/$FILENAME"
+[ $CLIPBOARD -eq 0 ] && Print "Saving in: %s\n" "$SAVE_FULLPATH"
+begin_grab $OPTION
+
+#+end_src
+*** animation select - [[file:~/.local/bin/anime-select][anime-select]]
+#+begin_src bash :tangle ~/.local/bin/anime-select :shebang #!/usr/bin/env bash
+
+_ui_set=$(printf "maximum\nbalance\nminimal" | tofi --prompt-text='Animation 「动画」: ')
+[ -z "${_ui_set}" ] && exit
+
+ln -sf ~/.config/hypr/conf.d/33-animation-"${_ui_set}".conf ~/.config/hypr/conf.d/03-animation.conf &&
+    hyprctl reload &&
+    notify-send "切换视觉效果至${_ui_set}"
+
+#+end_src
+*** panel select - [[file:~/.local/bin/waybar-select][waybar-select]]
+#+begin_src bash :tangle ~/.local/bin/waybar-select :shebang #!/usr/bin/env bash
+
+_monitor_set=$(printf "laptop\nsingle\ndual\ntriple" | tofi --prompt-text='Waybar profile「面板方案」: ')
+[ -z "${_monitor_set}" ] && exit
+
+ln -sf ~/.config/waybar/conf.d/"${_monitor_set}".json ~/.config/waybar/config &
+ ln -sf ~/.config/hypr/conf.d/22-output-"${_monitor_set}".conf ~/.config/hypr/conf.d/02-output.conf &
+ ln -sf ~/.config/hypr/conf.d/44-rule-"${_monitor_set}".conf ~/.config/hypr/conf.d/04-rule.conf &
+pkill waybar &&
+    waybar
+
+#+end_src
+*** color scheme select - [[file:~/.local/bin/scheme-select][scheme-select]]
+#+begin_src bash :tangle ~/.local/bin/scheme-select :shebang #!/usr/bin/env bash
+
+_scheme_set=$(printf "light\ndark" | tofi --prompt-text='Color scheme「色彩方案」: ')
+[ -z "${_scheme_set}" ] && exit
+
+ln -sf ~/.config/waybar/conf.d/"${_scheme_set}".css ~/.config/waybar/style.css &
+ln -sf ~/.config/hypr/conf.d/33-layout-"${_scheme_set}".conf ~/.config/hypr/conf.d/03-layout.conf &
+ln -sf ~/.config/tofi/conf.d/"${_scheme_set}".conf ~/.config/tofi/config &
+ln -sf ~/.config/fcitx5/conf/"${_scheme_set}".conf ~/.config/fcitx5/conf/classicui.conf &
+ln -sf ~/.config/mako/conf.d/"${_scheme_set}".conf ~/.config/mako/config &
+makoctl reload &
+fcitx5 -r &
+pkill waybar &&
+    waybar
+
+#+end_src
+** wallpaper
+*** init - [[file:~/.local/bin/swww-init][swww-init]]
+#+begin_src bash :tangle ~/.local/bin/swww-init :shebang #!/usr/bin/env bash
+
+if [[ -f ~/.cache/swww/eDP-1 ]]; then
+    _wallpaper1=$(cat ~/.cache/swww/eDP-1)
+    swww img "${_wallpaper1}" -o eDP-1
+fi
+
+if [[ -f ~/.cache/swww/HDMI-A-1 ]]; then
+    _wallpaper2=$(cat ~/.cache/swww/HDMI-A-1)
+    swww img "${_wallpaper2}" -o HDMI-A-1
+fi
+
+#+end_src
+*** select - [[file:~/.local/bin/swww-select][swww-select]]
+#+begin_src bash :tangle ~/.local/bin/swww-select :shebang #!/usr/bin/env bash
+
+_wallpaper=$(fd --base-directory ~/Wallpaper -e jpg -e png -e webp | tofi --prompt-text='Wallpaper「壁纸」: ')
+[ -z "${_wallpaper}" ] && exit
+
+_monitor=$(hyprctl monitors | awk '$1 ~/Monitor/ {print $2}' | tofi --prompt-text='Monitor「显示器」: ')
+[ -z "${_monitor}" ] && exit
+
+swww img ~/Wallpaper/"${_wallpaper}" -o "${_monitor}" &&
+    notify-send "应用桌面壁纸${_wallpaper}至显示器${_monitor}"
+
+#+end_src
+** clipboard
+*** history - [[file:~/.local/bin/wl-clipboard-history][wl-clipboard-history]]
+#+begin_src bash :tangle ~/.local/bin/wl-clipboard-history :shebang #!/usr/bin/env bash
+set -euo pipefail
+
+clipboard_file="$HOME/.cache/clipboard.sqlite"
+
+query() {
+	echo "$1" | sqlite3 -separator "," "$clipboard_file"
+}
+
+if [ ! -f "$clipboard_file" ]; then
+	query "
+    CREATE TABLE c (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, contents text);
+    CREATE TRIGGER rotate_rows AFTER INSERT ON c
+   BEGIN
+     DELETE FROM c WHERE id <= (SELECT id FROM c ORDER BY id DESC LIMIT 1000, 1);
+   END;"
+fi
+
+listen() {
+	wl-paste -w wl-clipboard-history
+}
+
+helpusage() {
+	echo "Usage: $0 OPTION [ARG]"
+	echo ""
+	echo "Without any arguments the command will insert contents of stdin in the database"
+	echo "   -t           Track clipboard changes"
+	echo "   -l [NUMBER]  Print last NUMBER of clipboard entries (defaults to 10 entries)"
+	echo "   -p [INDEX]   Print clipboard entry at INDEX (defaults to the last entry)"
+}
+
+if [ $# = 0 ]; then
+	contents="$(sed </dev/stdin "s/'/''/g")"
+	if [ "$contents" = "" ]; then
+		helpusage
+		exit 1
+	else
+		query "INSERT INTO c (contents) VALUES ('${contents}');"
+		exit 0
+	fi
+fi
+
+if [ "$1" = "-t" ]; then
+	listen
+elif [ "$1" = "-l" ]; then
+	query "SELECT MAX(id), REPLACE(contents, '
+', '') FROM c GROUP BY contents ORDER BY id DESC LIMIT ${2:-10}"
+elif [ "$1" = "-p" ]; then
+	query "SELECT contents FROM c WHERE id = ${2:-"(SELECT id FROM c ORDER BY id DESC)"}"
+else
+	helpusage
+	exit 1
+fi
+#+end_src
+*** select - [[file:~/.local/bin/wl-clipboard-select][wl-clipboard-select]]
+#+begin_src bash :tangle ~/.local/bin/wl-clipboard-select :shebang #!/usr/bin/env bash
+wl-clipboard-history -l | tofi --prompt-text="Clipboard history「剪贴板历史」: " | awk -F, '{print $2}' | wl-copy -p
+#+end_src
+** helper
+*** helper - [[file:~/.local/bin/helper][helper]]
+#+begin_src bash :tangle ~/.local/bin/helper :shebang #!/usr/bin/env bash
+
+_helper=$(fd -e org --base-directory ~/Document/cheatsheet | awk -F. '{print $1}' | tofi --prompt-text='Helper 「帮助」: ')
+[ -z "${_helper}" ] && exit
+
+cat ~/Document/cheatsheet/"${_helper}".org | tofi
+
+#+end_src
+** pending
+*** file select - [[file:~/.local/bin/file-select][file-select]]
+#+begin_src bash :shebang #!/usr/bin/env bash
+
+_file=$(find . -type f | tofi --prompt-text="File chooser「选择文件」: ")
+[ -z "${_file}" ] && exit
+
+_action=$(printf "emacs\nmpv" | tofi --prompt-text='Action「操作」: ')
+[ -z "${_action}" ] && exit
+
+case ${_action} in
+    emacs)
+        emacsclient -r -a -- "${_file}"
+        ;;
+    mpv)
+        mpv -- "${_file}"
+        ;;
+esac
+
+#+end_src
+*** monitor switch - [[file:~/.local/bin/monitor-switch][monitor-switch]]
+#+begin_src bash :shebang #!/usr/bin/env bash
+
+_monitor=$(printf "eDP-1\nHDMI-A-1" | tofi --prompt-text='Monitor「显示器」: ')
+_action=$(printf "turn_on\nturn_off\npower_on\npower_off" | tofi --prompt-text='Action「操作」: ')
+
+case ${_monitor} in
+    eDP-1)
+        if [ "${_action}" = 'turn_on' ]; then
+            hyprctl dispatch dpms on "${_monitor}"
+        elif [ "${_action}" = 'turn_off' ]; then
+            hyprctl dispatch dpms off "${_monitor}"
+        elif [ "${_action}" = 'power_on' ]; then
+            hyprctl keyword monitor eDP-1,2880x1800@60,0x0,1
+        elif [ "${_action}" = 'power_off' ]; then
+            hyprctl keyword monitor "${_monitor}",disable
+        else
+            echo "wtf"
+        fi
+        ;;
+    HDMI-A-1)
+        if [ "${_action}" = 'turn_on' ]; then
+            hyprctl dispatch dpms on "${_monitor}"
+        elif [ "${_action}" = 'turn_off' ]; then
+            hyprctl dispatch dpms off "${_monitor}"
+        elif [ "${_action}" = 'power_on' ]; then
+            hyprctl keyword monitor HDMI-A-1,2560x1440@75,2880x0,1
+        elif [ "${_action}" = 'power_off' ]; then
+            hyprctl keyword monitor "${_monitor}",disable
+        else
+            echo "wtf"
+        fi
+        ;;
+esac
+
+#+end_src
+*** scratchpad - [[file:~/.local/bin/scratchpad][scratchpad]]
+#+begin_src bash :shebang #!/usr/bin/env bash
+handle() {
+    line=$1
+    if [[ "$line" = openwindow* ]]; then
+        read -r window_address workspace window_class <<<$(echo "$line" | awk -F "[>,]" '{print $3,$4,$5}')
+        if [[ "$workspace" = "special:dropdown" && "$window_class" != "kitty-dropdown" ]]; then
+            hyprctl dispatch movetoworkspace e+0,address:0x${window_address}
+            hyprctl dispatch togglespecialworkspace dropdown
+        fi
+    fi
+}
+
+socat -U - UNIX-CONNECT:/tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock | \
+    while read -r line; do handle "$line"; done
+#+end_src
+* tty
+** kernel config
+*** init - [[file:~/.local/bin/kconf][kconf]]
+#+begin_src bash :tangle ~/.local/bin/kconf :shebang #!/usr/bin/env bash
+
+_kver=$(uname -r | awk -F- '{print $1}')
+ebuild /var/db/repos/gentoo/sys-kernel/gentoo-kernel/gentoo-kernel-"${_kver}".ebuild configure
+
+#+end_src
+*** diff - [[file:~/.local/bin/kdiff][kdiff]]
+#+begin_src bash :tangle ~/.local/bin/kdiff :shebang #!/usr/bin/env bash
+
+diff --changed-group-format="%>" --unchanged-group-format="" .config.old .config | tee -a /home/wimi/tp/kdiff.config
+
+#+end_src
+*** initramfs - [[file:~/.local/bin/upimg][upimg]]
+#+begin_src bash :tangle ~/.local/bin/upimg :shebang #!/usr/bin/env bash
+
+echo "Upstream Version ?"
+read -r _ukver
+echo "Local Version ?"
+read -r _lkver
+echo "Image ?"
+read -r _image
+
+doas dracut /boot/efi/"${_image}"/"${_image}".img -f --hostonly --zstd --kver="${_ukver}"-"${_lkver}"-xanmod1
+
+#+end_src
+*** efi - [[file:~/.local/bin/upefi][upefi]]
+#+begin_src bash :tangle ~/.local/bin/upefi :shebang #!/usr/bin/env bash
+
+echo "boot name"
+read -r _boot-name
+echo "boot id ?"
+read -r _boot-id
+echo "boot order ?"
+read -r _boot-order
+
+doas efibootmgr -c -d /dev/nvme0n1p1 -p 1 -b "${_boot-order}" -L "${_boot-name}" -l "\${_boot-id}\${_boot-id}.efi" -u "initrd=\${_boot-id}\intel-uc.img initrd=\${_boot-id}\${_boot-id}.img root=LABEL=LXS rootfstype=btrfs rootflags=subvol=/@ rw quiet splash loglevel=3 nowatchdog vt.default_red=48,231,166,229,140,244,129,181,98,231,166,229,140,244,129,165 vt.default_grn=52,130,209,200,170,184,200,191,104,130,209,200,170,184,200,173 vt.default_blu=70,132,137,144,238,228,190,226,128,132,137,144,238,228,190,206"
+
+#+end_src
+** admin
+*** swap - [[file:~/.local/bin/swapadd][swapadd]]
+#+begin_src bash :tangle ~/.local/bin/swapadd :shebang #!/usr/bin/env bash
+
+doas modprobe zram
+doas zramctl -a zstd -s 32G /dev/zram0
+doas mkswap -L zram_swap /dev/zram0
+doas swapon -L zram_swap -p 100
+echo "done"
+
+#+end_src
+*** battery - [[file:~/.local/bin/battery-alarm][battery-alarm]]
+#+begin_src bash :tangle ~/.local/bin/battery-alarm :shebang #!/usr/bin/env bash
+
+_bat_status=$(cat /sys/class/power_supply/BAT0/status)
+_bat_capacity=$(cat /sys/class/power_supply/BAT0/capacity)
+
+if [[ "${_bat_status}"=="Discharging" && ${_bat_capacity} -lt 20 ]]; then
+    mpv ~/Music/'The Little Things-Danny Elfman.mp3'
+fi
+#+end_src
+** kitty
+*** btop - [[file:~/.local/bin/run-btop][run-btop]]
+#+begin_src bash :tangle ~/.local/bin/run-btop :shebang #!/usr/bin/env bash
+
+kitty --session session-btop.conf
+
+#+end_src
+*** pulsemixer - [[file:~/.local/bin/run-pulsemixer][run-pulsemixer]]
+#+begin_src bash :tangle ~/.local/bin/run-pulsemixer :shebang #!/usr/bin/env bash
+
+kitty --session session-pulsemixer.conf
+
+#+end_src
+
+*** musicfox - [[file:~/.local/bin/run-musicfox][run-musicfox]]
+#+begin_src bash :tangle ~/.local/bin/run-musicfox :shebang #!/usr/bin/env bash
+
+kitty --session session-musicfox.conf
+
+#+end_src
+*** emacs - [[file:~/.local/bin/run-emacs][run-emacs]]
+#+begin_src bash :tangle ~/.local/bin/run-emacs :shebang #!/usr/bin/env bash
+
+kitty --session session-emacs.conf
+
+#+end_src
+* gui
+** discord
+*** run - [[file:~/.local/bin/run-discord][run-discord]]
+#+begin_src bash :tangle ~/.local/bin/run-discord :shebang #!/usr/bin/env bash
+
+flatpak run com.discordapp.Discord
+
+#+end_src
+** kdenlive
+*** run - [[file:~/.local/bin/run-kdenlive][run-kdenlive]]
+#+begin_src bash :tangle ~/.local/bin/run-kdenlive :shebang #!/usr/bin/env bash
+
+flatpak run org.kde.kdenlive
+
+#+end_src
+** krita
+*** run - [[file:~/.local/bin/run-krita][run-krita]]
+#+begin_src bash :tangle ~/.local/bin/run-krita :shebang #!/usr/bin/env bash
+
+flatpak run org.kde.krita
+
+#+end_src
+** obs
+*** run - [[file:~/.local/bin/run-obs][run-obs]]
+#+begin_src bash :tangle ~/.local/bin/run-obs :shebang #!/usr/bin/env bash
+
+flatpak run com.obsproject.Studio
+
+#+end_src
+** telegram
+*** run - [[file:~/.local/bin/run-telegram][run-telegram]]
+#+begin_src bash :tangle ~/.local/bin/run-telegram :shebang #!/usr/bin/env bash
+
+flatpak run org.telegram.desktop
+
+#+end_src
+
+** wechat
+*** run - [[file:~/.local/bin/run-wechat][run-wechat]]
+#+begin_src bash :tangle ~/.local/bin/run-wechat :shebang #!/usr/bin/env bash
+
+flatpak run com.tencent.WeChat
+
+#+end_src

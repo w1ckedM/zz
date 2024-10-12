@@ -1,0 +1,301 @@
+#+title: Portage Configuration of Lenovo83AL ( XiaoXin Pro 14 IRH8 )
+#+startup: show2levels
+#+PROPERTY: header-args :mkdirp yes
+
+* 选项
+** 默认选项 - [[file:/etc/portage/make.conf][make.conf]]
+#+begin_src conf :tangle "/doas::/etc/portage/make.conf"
+ACCEPT_LICENSE="*"
+ACCEPT_KEYWORDS="~amd64"
+
+COMMON_FLAGS="-march=native -O3 -flto -pipe -fomit-frame-pointer -falign-functions=32"
+CFLAGS="${COMMON_FLAGS} -fdata-sections -ffunction-sections"
+CXXFLAGS="${COMMON_FLAGS}"
+FCFLAGS="${COMMON_FLAGS}"
+FFLAGS="${COMMON_FLAGS}"
+LDFLAGS="${COMMON_FLAGS}"
+RUSTFLAGS="-C debuginfo=0 -C codegen-units=1 -C target-cpu=native -C opt-level=3"
+
+MAKEOPTS="-j8 -l8"
+EMERGE_DEFAULT_OPTS="--autounmask-write=y --complete-graph=y --quiet-build=y --with-bdeps=y --verbose --ask --deep --keep-going"
+FEATURES="candy fixlafiles unmerge-orphans noman nodoc noinfo notitles parallel-install parallel-fetch binpkg-request-signature"
+#PORTAGE_SCHEDULING_POLICY="idle"
+
+USE="-debug -doc -examples -man -test"
+USE="${USE} -lzo"
+USE="${USE} dbus pipewire policykit pulseaudio systemd vulkan wayland X"
+USE="${USE} asm clang jit lto openmp orc pgo threads xs zstd"
+USE="${USE} cairo cjk harfbuzz icu imagemagick introspection jpeg lcms minimal pango png"
+AUTO_CLEAN="yes"
+
+LUA_SINGLE_TARGET="lua5-4"
+LUA_TARGETS="lua5-4"
+PYTHON_SINGLE_TARGET="python3_12"
+PYTHON_TARGETS="python3_12"
+RUBY_SINGLE_TARGET="ruby31"
+RUBY_TARGETS="ruby31"
+LLVM_TARGETS="X86"
+
+LC_MESSAGES=C.utf8
+L10N="en-US zh-CN en zh"
+
+CPU_FLAGS_X86="aes avx avx2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 sse3 sse4_1 sse4_2 ssse3"
+VIDEO_CARDS="intel i965 iris"
+ALSA_CARDS="hda-intel"
+INPUT_DEVICES="libinput"
+#MICROCODE_SIGNATURES="-s 0x000b06a2"
+
+GENTOO_MIRRORS="https://mirrors.ustc.edu.cn/gentoo"
+#+end_src
+** 安全选项 - [[file:/etc/portage/env/failsafe.conf][env/failsafe.conf]]
+#+begin_src conf :tangle "/doas::/etc/portage/env/failsafe.conf"
+COMMON_FLAGS="-march=alderlake -O2 -pipe -fomit-frame-pointer"
+#COMMON_FLAGS="-march=alderlake -O2 -pipe -fomit-frame-pointer --param=l1-cache-size=32"
+CFLAGS="${COMMON_FLAGS}"
+CXXFLAGS="${COMMON_FLAGS}"
+FCFLAGS="${COMMON_FLAGS}"
+FFLAGS="${COMMON_FLAGS}"
+LDFLAGS="${COMMON_FLAGS}"
+
+MAKEOPTS="-j4"
+EMERGE_DEFAULT_OPTS="--autounmask-write=y --complete-graph=y --quiet-build=y --with-bdeps=y --verbose --ask --deep --keep-going"
+#+end_src
+* 库
+** 官方库 - [[file:/etc/portage/repos.conf/gentoo.conf][repos.conf/gentoo.conf]]
+#+begin_src conf :tangle "/doas::/etc/portage/repos.conf/gentoo.conf"
+[DEFAULT]
+main-repo = gentoo
+
+[gentoo]
+location = /var/db/repos/gentoo
+sync-type = git
+sync-uri = https://mirrors.ustc.edu.cn/gentoo.git
+#+end_src
+** 本地库 - [[file:/etc/portage/repos.conf/gentoo.conf][repos.conf/gentoo.conf]]
+#+begin_src conf
+[gentoo-w1cked]
+location = /var/db/repos/gentoo-w1cked
+#+end_src
+** 第三方库 - [[file:/etc/portage/repos.conf/gentoo.conf][repos.conf/gentoo.conf]]
+#+begin_src conf :tangle "/doas::/etc/portage/repos.conf/gentoo.conf"
+[guru]
+location = /var/db/repos/guru
+sync-type = git
+sync-uri = https://github.com/gentoo-mirror/guru.git
+
+[gentoo-zh]
+location = /var/db/repos/gentoo-zh
+sync-type = git
+sync-uri = https://github.com/gentoo-mirror/gentoo-zh.git
+#+end_src
+** 二进制库 - [[file:/etc/portage/binrepos.conf/gentoo.conf][binrepos.conf/gentoo.conf]]
+#+begin_src conf :tangle "/doas::/etc/portage/binrepos.conf/gentoo.conf"
+[binhost]
+priority = 1
+sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v3/
+#+end_src
+* profile
+** default profile
+*** package - [[file:/etc/portage/profile/packages][profile/packages]]
+改默认编辑器nano为neovim，增加本机必要包
+#+begin_src conf :tangle "/doas::/etc/portage/profile/packages"
+-*app-editors/nano
+*app-editors/neovim
+*dev-vcs/git
+*app-laptop/laptop-mode-tools
+*net-wireless/bluez
+*net-wireless/iw
+*net-wireless/iwd
+*sys-boot/efibootmgr
+*sys-firmware/intel-microcode
+*sys-firmware/sof-firmware
+*sys-fs/btrfs-progs
+*sys-kernel/gentoo-kernel
+*sys-kernel/linux-firmware
+#+end_src
+*** llvm- [[file:/etc/portage/profile/package.use.mask/llvm][profile/packages/package.use.mask/llvm]]
+去除默认llvm多余架构
+#+begin_src conf :tangle "/doas::/etc/portage/profile/packages/package.use.mask/llvm"
+>=sys-devel/clang-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=sys-devel/clang-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=sys-devel/clang-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=sys-devel/clang-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=sys-devel/clang-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=sys-devel/clang-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=sys-devel/clang-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+#>=sys-devel/clang-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=sys-devel/clang-14 llvm_targets_VE
+>=sys-devel/clang-16 llvm_targets_LoongArch
+
+>=sys-devel/llvm-13.0.1_rc llvm_targets_AArch64 llvm_targets_AMDGPU
+>=sys-devel/llvm-13.0.1_rc llvm_targets_ARM llvm_targets_AVR llvm_targets_BPF
+>=sys-devel/llvm-13.0.1_rc llvm_targets_Hexagon llvm_targets_Lanai
+>=sys-devel/llvm-13.0.1_rc llvm_targets_MSP430 llvm_targets_Mips
+>=sys-devel/llvm-13.0.1_rc llvm_targets_NVPTX llvm_targets_PowerPC
+>=sys-devel/llvm-13.0.1_rc llvm_targets_RISCV llvm_targets_Sparc
+>=sys-devel/llvm-13.0.1_rc llvm_targets_SystemZ llvm_targets_WebAssembly
+#>=sys-devel/llvm-13.0.1_rc llvm_targets_X86 llvm_targets_XCore
+>=sys-devel/llvm-14 llvm_targets_VE
+>=sys-devel/llvm-16 llvm_targets_LoongArch
+#+end_src
+*** failsafe - [[file:/etc/portage/package.env/failsafe][package.env/failsafe]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.env/failsafe"
+sys-devel/gcc failsafe.conf
+#+end_src
+*** use - [[file:/etc/portage/package.use/system][package.use/default]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.use/default"
+app-arch/xz-utils static-libs
+app-crypt/gnupg -smartcard
+sys-devel/gcc -fortran graphite jit lto pgo zstd
+sys-libs/zlib minizip static-libs
+
+app-editors/neovim lua_single_target_luajit -lua_single_target_lua5-1
+dev-lua/luv lua_single_target_luajit -lua_single_target_lua5-4
+dev-lua/lpeg lua_targets_luajit
+dev-lua/mpack lua_targets_luajit
+
+net-wireless/bluez experimental midi
+sys-apps/util-linux tty-helpers
+sys-firmware/intel-microcode hostonly initramfs
+sys-kernel/installkernel dracut
+
+#+end_src
+*** mask - [[file:/etc/portage/package.mask/system][package.mask/default]]
+锁定python版本
+#+begin_src conf :tangle "/doas::/etc/portage/package.mask/default"
+>=dev-lang/python-3.13
+#+end_src
+*** autounmask - [[file:/etc/portage/package.use/zz-autounmask][package.use/zz-autounmask]]
+ freetype/harfbuzz循环
+#+begin_src conf
+media-libs/freetype -harfbuzz
+#+end_src
+** user profile
+*** admin
+**** current - [[file:/var/lib/portage/world][/var/lib/portage/world]]
+#+begin_src conf :tangle "/doas::/var/lib/portage/world"
+app-admin/doas
+app-admin/stow
+app-misc/keyd
+app-portage/gentoolkit
+sys-apps/arch-chroot
+sys-fs/exfatprogs
+#+end_src
+*** lang
+**** failsafe - [[file:/etc/portage/package.env/failsafe][package.env/failsafe]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.env/failsafe"
+sys-devel/clang failsafe.conf
+sys-devel/clang-common failsafe.conf
+sys-devel/clang-runtime failsafe.conf
+sys-devel/clang-toolchain-symlinks failsafe.conf
+#+end_src
+**** use - [[file:/etc/portage/package.use/user][package.use/user]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.use/user"
+dev-lang/rust system-llvm system-bootstrap
+sys-devel/clang-common default-compiler-rt default-lld
+sys-libs/libunwind static-libs
+#+end_src
+*** emacs
+**** current - [[file:/var/lib/portage/world][/var/lib/portage/world]]
+#+begin_src conf :tangle "/doas::/var/lib/portage/world"
+app-editors/emacs
+app-emacs/pdf-tools
+dev-util/shellcheck-bin
+#+end_src
+**** failsafe - [[file:/etc/portage/package.env/failsafe][package.env/failsafe]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.env/failsafe"
+app-editors/emacs failsafe.conf
+#+end_src
+**** use - [[file:/etc/portage/package.use/user][package.use/user]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.use/user"
+app-editors/emacs alsa dynamic-loading harfbuzz gtk gui json libxml2 sound sqlite tree-sitter xft -imagemagick -xpm -X
+app-emacs/emacs-common gui
+app-text/poppler -jpeg2k
+#+end_src
+*** cli/tui
+**** current - [[file:/var/lib/portage/world][/var/lib/portage/world]]
+#+begin_src conf :tangle "/doas::/var/lib/portage/world"
+app-arch/unrar
+app-misc/brightnessctl
+app-shells/fzf
+app-shells/zoxide
+media-sound/go-musicfox
+media-sound/pulsemixer
+net-misc/socat
+net-proxy/v2rayA
+sys-apps/eza
+sys-apps/fd
+sys-apps/ripgrep
+sys-process/btop
+x11-libs/libnotify
+#+end_src
+*** hyprland
+**** current - [[file:/var/lib/portage/world][/var/lib/portage/world]]
+#+begin_src conf :tangle "/doas::/var/lib/portage/world"
+dev-lang/rust-bin
+gui-apps/hyprlock
+gui-apps/grim
+gui-apps/mako
+gui-apps/slurp
+gui-apps/swww
+gui-apps/tofi
+gui-apps/waybar
+gui-apps/wl-clipboard
+gui-libs/xdg-desktop-portal-hyprland
+gui-wm/hyprland
+media-video/mpv
+sys-apps/flatpak
+www-client/brave-bin
+x11-terms/kitty
+#+end_src
+**** use - [[file:/etc/portage/package.use/user][package.use/user]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.use/user"
+media-libs/libcanberra alsa
+media-libs/mesa vulkan-overlay -llvm
+media-libs/vulkan-loader layers
+media-video/ffmpeg alsa mp3
+media-video/pipewire bluetooth extra ffmpeg flatpak pipewire-alsa sound-server
+
+gui-apps/waybar -libinput -logind experimental network tray
+dev-libs/date only-c-locale
+dev-libs/libdbusmenu gtk3
+sys-auth/seatd builtin server
+
+sys-apps/xdg-desktop-portal flatpak
+
+app-text/xmlto text
+
+www-client/brave-bin qt6
+#+end_src
+**** autounmask - hyprland+x - [[file:/etc/portage/package.use/x][package.use/zz-autounmask]]
+#+begin_src conf
+gui-wm/hyprland X
+# required by x11-base/xwayland::gentoo
+# required by gui-wm/hyprland::gentoo[X]
+media-libs/libepoxy X
+# required by media-libs/mesa::gentoo
+# required by x11-base/xwayland::gentoo
+# required by gui-wm/hyprland::gentoo[X]
+media-libs/libglvnd X
+# required by x11-base/xwayland::gentoo
+# required by gui-wm/hyprland::gentoo[X]
+media-libs/mesa X
+#+end_src
+*** chinese
+**** current - [[file:/var/lib/portage/world][/var/lib/portage/world]]
+#+begin_src conf :tangle "/doas::/var/lib/portage/world"
+app-i18n/fcitx-gtk
+app-i18n/fcitx-qt
+app-i18n/fcitx-rime
+media-fonts/lxgw-wenkai
+media-fonts/sarasa-term-sc-nerd
+#+end_src
+**** use - [[file:/etc/portage/package.use/user][package.use/user]]
+#+begin_src conf :tangle "/doas::/etc/portage/package.use/user"
+app-i18n/fcitx -emoji
+app-i18n/fcitx-qt -qt5 qt6
+dev-qt/qtbase opengl
+dev-qt/qtgui egl
+dev-qt/qttools opengl
+dev-util/google-perftools -minimal
+#+end_src
