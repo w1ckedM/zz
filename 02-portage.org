@@ -94,18 +94,6 @@ sync-uri = https://distfiles.gentoo.org/releases/amd64/binpackages/23.0/x86-64-v
 改默认编辑器nano为neovim，增加本机必要包
 #+begin_src conf :tangle "/doas::/etc/portage/profile/packages"
 -*app-editors/nano
-*app-editors/neovim
-*dev-vcs/git
-*app-laptop/laptop-mode-tools
-*net-wireless/bluez
-*net-wireless/iw
-*net-wireless/iwd
-*sys-boot/efibootmgr
-*sys-firmware/intel-microcode
-*sys-firmware/sof-firmware
-*sys-fs/btrfs-progs
-*sys-kernel/gentoo-kernel
-*sys-kernel/linux-firmware
 #+end_src
 *** failsafe - [[file:/etc/portage/package.env/failsafe][package.env/failsafe]]
 #+begin_src conf :tangle "/doas::/etc/portage/package.env/failsafe"
@@ -140,15 +128,27 @@ sys-kernel/installkernel dracut
 media-libs/freetype -harfbuzz
 #+end_src
 ** user profile
-*** admin
+*** default
 **** current - [[file:/var/lib/portage/world][/var/lib/portage/world]]
 #+begin_src conf :tangle "/doas::/var/lib/portage/world"
 app-admin/doas
-app-admin/stow
+app-editors/neovim
+app-laptop/laptop-mode-tools
 app-misc/keyd
 app-portage/gentoolkit
+app-portage/portage-utils
+dev-vcs/git
+net-wireless/bluez
+net-wireless/iw
+net-wireless/iwd
 sys-apps/arch-chroot
+sys-boot/efibootmgr
+sys-firmware/intel-microcode
+sys-firmware/sof-firmware
+sys-fs/btrfs-progs
 sys-fs/exfatprogs
+sys-kernel/gentoo-kernel
+sys-kernel/linux-firmware
 #+end_src
 *** lang
 **** failsafe - [[file:/etc/portage/package.env/failsafe][package.env/failsafe]]

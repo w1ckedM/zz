@@ -7,9 +7,6 @@
 #+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
 CONFIG_LOCALVERSION="-failsafe"
 #+end_src
-#+begin_src conf
-CONFIG_LOCALVERSION="-test"
-#+end_src
 *** hostname - failsafe
 #+begin_src conf :tangle "/doas::/etc/kernel/config.d/00-failsafe.config"
 CONFIG_DEFAULT_HOSTNAME=""
