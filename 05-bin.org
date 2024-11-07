@@ -681,7 +681,7 @@ _bat_status=$(cat /sys/class/power_supply/BAT0/status)
 _bat_capacity=$(cat /sys/class/power_supply/BAT0/capacity)
 
 if [[ "${_bat_status}"=="Discharging" && ${_bat_capacity} -lt 20 ]]; then
-    mpv ~/Music/'The Little Things-Danny Elfman.mp3'
+    mpv ~/Music/'The Little Things - Danny Elfman.mp3'
 fi
 #+end_src
 ** kitty
